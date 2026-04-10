@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fayeyu's Podcast Gallery</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--o:#FF6A00;--ol:#FF8C33;--op:#FFF3E8;--bk:#1A1A1A;--dk:#2D2D2D;--g:#888;--gl:#CCC;--bg:#FAFAFA;--w:#FFF;--gn:#22C55E;--rd:#EF4444;--bl:#3B82F6;--p:#8B5CF6;--pl:#A78BFA;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--bk);min-height:100vh;overflow:hidden;}
+.app{display:grid;grid-template-columns:250px 1fr;height:100vh;}
+
+/* Sidebar */
+.sb{background:var(--bk);color:var(--w);display:flex;flex-direction:column;overflow:hidden;}
+.sb-h{padding:20px 18px 12px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.sb-h h1{font-size:15px;font-weight:900;color:var(--o);}
+.sb-h p{font-size:9px;color:rgba(255,255,255,0.25);margin-top:2px;}
+.sb-nav{padding:8px;}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:7px;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.5);transition:all 0.15s;margin-bottom:1px;}
+.ni:hover{background:rgba(255,255,255,0.06);color:var(--w);}
+.ni.act{background:rgba(255,106,0,0.15);color:var(--o);}
+.ni .bdg{margin-left:auto;background:var(--o);color:white;font-size:9px;padding:1px 6px;border-radius:8px;}
+.sb-sec{padding:2px 8px;flex:1;overflow-y:auto;}
+.sb-sec h3{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.18);padding:6px 10px 3px;}
+.pi{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:6px;cursor:pointer;font-size:11px;color:rgba(255,255,255,0.45);transition:all 0.15s;position:relative;}
+.pi:hover{background:rgba(255,255,255,0.06);color:var(--w);}
+.pi.act{color:var(--o);}
+.pa{width:20px;height:20px;border-radius:4px;object-fit:cover;flex-shrink:0;background:var(--dk);}
+.pn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nb{font-size:9px;color:var(--o);font-weight:600;}
+.db{display:none;position:absolute;right:4px;top:50%;transform:translateY(-50%);background:var(--rd);color:white;border:none;border-radius:3px;font-size:8px;padding:1px 3px;cursor:pointer;}
+.pi:hover .db{display:block;}
+.sb-bt{padding:14px 12px;border-top:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:8px;}
+.ba,.bo{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;letter-spacing:0.5px;}
+.ba{border:2px solid var(--o);background:rgba(255,106,0,0.1);color:var(--o);}.ba:hover{background:var(--o);color:white;}
+.bo{border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);}.bo:hover{background:rgba(255,255,255,0.1);color:var(--w);border-color:rgba(255,255,255,0.4);}
+
+/* Main */
+.mn{padding:22px 28px;overflow-y:auto;position:relative;}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}.ph h2{font-size:18px;font-weight:700;}
+.acs{display:flex;gap:5px;}
+.bt{padding:5px 14px;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;transition:all 0.15s;font-weight:500;}
+.bp{background:var(--o);color:white;}.bp:hover{background:var(--ol);}
+.bou{background:transparent;border:1px solid var(--gl);color:var(--bk);}.bou:hover{border-color:var(--o);color:var(--o);}
+.bs{padding:3px 9px;font-size:10px;}
+.brd{background:var(--rd);color:white;}
+
+/* Stats & Workflow */
+.wf{display:flex;margin-bottom:18px;background:var(--w);border-radius:9px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.ws{flex:1;padding:10px 12px;text-align:center;border-right:1px solid rgba(0,0,0,0.03);}.ws:last-child{border:none;}
+.ws .wn{width:22px;height:22px;border-radius:50%;background:var(--bg);color:var(--g);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-bottom:2px;}
+.ws.act .wn{background:var(--o);color:white;}
+.ws .wl{font-size:10px;font-weight:500;display:block;}.ws .wd{font-size:9px;color:var(--g);margin-top:1px;}
+.sr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.sc{background:var(--w);border-radius:9px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.sc .nm{font-size:22px;font-weight:700;}.sc .lb{font-size:9px;color:var(--g);margin-top:1px;}
+
+/* Episode Cards */
+.el{display:flex;flex-direction:column;gap:7px;}
+.ec{background:var(--w);border-radius:9px;padding:14px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.03);transition:all 0.2s;}
+.ec:hover{box-shadow:0 3px 10px rgba(0,0,0,0.06);}
+.et{display:flex;align-items:flex-start;gap:10px;}
+.ea{width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0;background:var(--bg);}
+.ei{flex:1;min-width:0;}
+.etl{font-size:13px;font-weight:600;margin-bottom:2px;display:flex;align-items:center;gap:6px;}
+.star-btn{background:none;border:none;cursor:pointer;font-size:14px;padding:0;line-height:1;transition:transform 0.2s;}.star-btn:hover{transform:scale(1.3);}
+.em{font-size:10px;color:var(--g);display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.pl{color:var(--o);font-weight:500;}
+.ed{font-size:11px;color:#666;margin-top:5px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.eac{display:flex;gap:4px;margin-top:7px;flex-wrap:wrap;align-items:center;}
+.st{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:500;}
+.tn{background:var(--op);color:var(--o);}.tp{background:#FEF3C7;color:#D97706;}.td{background:#F0FDF4;color:var(--gn);}.ts{background:#F5F5F5;color:var(--g);}
+.pb{margin-top:7px;background:#F3F4F6;border-radius:5px;height:5px;overflow:hidden;}
+.pf{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--o),var(--ol));transition:width 0.5s;}
+.pt{font-size:9px;color:var(--o);margin-top:2px;display:flex;align-items:center;gap:4px;}
+.sp{display:inline-block;width:9px;height:9px;border:2px solid var(--op);border-top-color:var(--o);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Drawer */
+.dov{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;opacity:0;pointer-events:none;transition:opacity 0.25s;}
+.dov.open{opacity:1;pointer-events:auto;}
+.drw{position:fixed;top:0;right:-58vw;width:56vw;height:100vh;background:var(--w);z-index:201;box-shadow:-4px 0 20px rgba(0,0,0,0.1);transition:right 0.3s ease;display:flex;flex-direction:column;}
+.drw.open{right:0;}
+.dh{padding:16px 24px;border-bottom:1px solid rgba(0,0,0,0.05);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.dh h3{font-size:15px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px;}
+.dc{background:none;border:none;font-size:18px;cursor:pointer;color:var(--g);padding:2px 6px;border-radius:5px;}.dc:hover{background:var(--bg);}
+.dbody{flex:1;overflow-y:auto;padding:24px 28px;}
+/* MD styles */
+.dbody h1{font-size:20px;font-weight:700;margin:20px 0 10px;}
+.dbody h2{font-size:17px;font-weight:700;margin:24px 0 10px;color:var(--o);border-bottom:2px solid var(--op);padding-bottom:6px;}
+.dbody h3{font-size:14px;font-weight:600;margin:16px 0 6px;color:var(--dk);}
+.dbody p{font-size:13px;line-height:1.85;margin-bottom:10px;color:#333;}
+.dbody ul,.dbody ol{padding-left:18px;margin-bottom:10px;}
+.dbody li{font-size:13px;line-height:1.75;margin-bottom:3px;}
+.dbody blockquote{border-left:3px solid var(--o);padding:10px 14px;margin:10px 0;background:var(--op);border-radius:0 7px 7px 0;font-size:13px;line-height:1.75;color:#444;}
+.dbody strong{color:var(--bk);}
+.dbody hr{border:none;border-top:1px solid #eee;margin:20px 0;}
+/* Term highlights in notes */
+.term-hl{background:linear-gradient(to bottom,transparent 60%,rgba(139,92,246,0.15) 60%);cursor:pointer;font-weight:500;position:relative;border-bottom:1px dashed var(--p);}
+/* Term popover */
+.term-pop{position:fixed;z-index:300;background:var(--w);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,0.12);max-width:360px;min-width:260px;display:none;}
+.term-pop.visible{display:block;}
+.term-pop .tp-name{font-size:14px;font-weight:700;color:var(--p);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.term-pop .tp-name .tp-tag{font-size:9px;background:rgba(139,92,246,0.1);color:var(--p);padding:1px 6px;border-radius:4px;}
+.term-pop .tp-def{font-size:12px;line-height:1.7;color:#444;}
+.term-pop .tp-refs{margin-top:8px;border-top:1px solid #eee;padding-top:8px;}
+.term-pop .tp-ref{font-size:10px;color:var(--g);padding:2px 0;cursor:pointer;}.tp-ref:hover{color:var(--o);}
+/* Backlinks section in drawer */
+.backlinks{margin-top:28px;padding-top:20px;border-top:2px solid var(--bg);}
+.backlinks h3{font-size:13px;font-weight:600;color:var(--p);margin-bottom:10px;}
+.bl-item{padding:8px 12px;background:var(--bg);border-radius:7px;margin-bottom:6px;border-left:3px solid var(--p);cursor:pointer;transition:all 0.15s;}
+.bl-item:hover{background:rgba(139,92,246,0.08);}
+.bl-item .bl-term{font-size:12px;font-weight:600;color:var(--p);}
+.bl-item .bl-def{font-size:11px;color:var(--g);margin-top:2px;}
+
+/* Knowledge Graph */
+.kg{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.kn{background:var(--w);border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.04);border:2px solid transparent;transition:all 0.2s;}
+.kn:hover{border-color:var(--p);box-shadow:0 4px 16px rgba(139,92,246,0.08);}
+.kt{display:inline-block;background:linear-gradient(135deg,#8B5CF6,#A78BFA);color:white;padding:3px 12px;border-radius:14px;font-size:12px;font-weight:600;margin-bottom:8px;}
+.kdef{font-size:12px;color:#555;line-height:1.6;margin-bottom:8px;padding:8px 10px;background:rgba(139,92,246,0.04);border-radius:6px;}
+.kc{font-size:10px;color:var(--g);margin-bottom:6px;}
+.kq{font-size:11px;line-height:1.5;color:#555;padding:5px 8px;background:var(--bg);border-radius:5px;margin-bottom:4px;border-left:2px solid var(--p);}
+.ke{font-size:10px;color:var(--g);padding:3px 0;display:flex;align-items:center;gap:5px;cursor:pointer;}.ke:hover{color:var(--o);}
+
+/* Filter */
+.fb{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;}
+.fc{padding:3px 11px;border-radius:14px;font-size:10px;border:1px solid var(--gl);background:var(--w);cursor:pointer;transition:all 0.15s;font-family:inherit;}
+.fc:hover{border-color:var(--o);color:var(--o);}.fc.act{background:var(--bk);color:var(--w);border-color:var(--bk);}
+
+/* Modal */
+.mb{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:100;}
+.mb.vis{display:flex;}
+.ml{background:var(--w);border-radius:12px;padding:22px;width:500px;max-width:90vw;max-height:78vh;overflow-y:auto;}
+.ml h3{font-size:15px;font-weight:700;margin-bottom:12px;}
+.fg{margin-bottom:10px;}.fg label{display:block;font-size:10px;font-weight:500;margin-bottom:3px;}
+.fg input,.fg textarea{width:100%;padding:7px 9px;border:1px solid var(--gl);border-radius:6px;font-size:12px;font-family:inherit;}
+.fg input:focus,.fg textarea:focus{outline:none;border-color:var(--o);}
+.ma{display:flex;gap:5px;justify-content:flex-end;margin-top:14px;}
+.srs{margin-top:8px;max-height:220px;overflow-y:auto;}
+.si{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;transition:all 0.15s;border:1px solid transparent;}
+.si:hover{background:var(--op);border-color:var(--o);}
+.si img{width:36px;height:36px;border-radius:6px;object-fit:cover;}
+.sn{font-size:11px;font-weight:600;}.sa{font-size:9px;color:var(--g);}
+.sl{text-align:center;padding:12px;color:var(--g);font-size:11px;}
+.nt{width:100%;min-height:250px;border:1px solid var(--gl);border-radius:7px;padding:12px;font-size:12px;line-height:1.6;font-family:'Noto Sans SC',sans-serif;resize:vertical;}.nt:focus{outline:none;border-color:var(--o);}
+.emp{text-align:center;padding:44px 24px;color:var(--g);}.emp .ic{font-size:32px;margin-bottom:8px;}.emp h3{font-size:14px;color:var(--bk);margin-bottom:4px;}.emp p{font-size:11px;}
+
+.kg-collapsed{display:none!important;}
+@media(max-width:768px){.app{grid-template-columns:1fr;}.sb{display:none;}.sr{grid-template-columns:1fr 1fr;}.drw{width:100vw;right:-100vw;}.kg{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sb">
+    <div class="sb-h"><h1>Fayeyu's Podcast Gallery</h1><p>播客订阅 & 内容提炼</p></div>
+    <nav class="sb-nav">
+      <div class="ni act" data-v="dash" onclick="sw('dash')"><span>&#9670;</span>控制台</div>
+      <div class="ni" data-v="pend" onclick="sw('pend')"><span>&#9679;</span>待处理<span class="bdg" id="bdg" style="display:none">0</span></div>
+      <div class="ni" data-v="all" onclick="sw('all')"><span>&#9776;</span>全部剧集</div>
+      <div class="ni" data-v="done" onclick="sw('done')"><span>&#9997;</span>已提炼</div>
+      <div class="ni" data-v="kg" onclick="sw('kg')"><span>&#9733;</span>知识图谱</div>
+      <div class="ni" data-v="fav" onclick="sw('fav')"><span>&#11088;</span>Best of Faye</div>
+    </nav>
+    <div class="sb-sec"><h3>订阅列表</h3><div id="pl"></div></div>
+    <div class="sb-bt"><button class="ba" onclick="showAdd()">+ 添加播客订阅</button><button class="bo" onclick="sm('om')">&#128279; 喂入单集链接</button></div>
+  </aside>
+  <main class="mn" id="mc"></main>
+</div>
+
+<!-- Drawer -->
+<div class="dov" id="dov" onclick="cd()"></div>
+<div class="drw" id="drw"><div class="dh"><h3 id="dt">笔记</h3><button class="dc" onclick="cd()">&#10005;</button></div><div class="dbody" id="db"></div></div>
+
+<!-- Term Popover -->
+<div class="term-pop" id="tpop"></div>
+
+<!-- Modals -->
+<div class="mb" id="am"><div class="ml"><h3>添加播客订阅</h3><div class="fg"><label>搜索播客名称</label><input id="ps" placeholder="输入名称自动搜索" oninput="ds()"></div><div class="srs" id="sr"></div><hr style="border:none;border-top:1px solid #eee;margin:8px 0;"><div class="fg"><label>或手动填写</label><input id="pnm" placeholder="播客名称" style="margin-bottom:4px;"><input id="prs" placeholder="RSS 链接（可选）"></div><div class="ma"><button class="bt bou" onclick="hm('am')">取消</button><button class="bt bp" onclick="apm()">手动添加</button></div></div></div>
+<div class="mb" id="om"><div class="ml"><h3>&#128279; 喂入单集播客</h3><div class="fg"><label>单集标题 *</label><input id="ot"></div><div class="fg"><label>链接</label><input id="ol"></div><div class="fg"><label>备注</label><textarea id="od" rows="2"></textarea></div><div class="ma"><button class="bt bou" onclick="hm('om')">取消</button><button class="bt bp" onclick="ao()">加入</button></div></div></div>
+<div class="mb" id="tm"><div class="ml" style="width:600px;"><h3 id="tt">上传逐字稿</h3><div class="fg"><textarea id="ti" class="nt" placeholder="粘贴逐字稿..."></textarea></div><div class="ma"><button class="bt bou" onclick="hm('tm')">取消</button><button class="bt bp" onclick="st()">&#9889; 开始提炼</button></div></div></div>
+
+<script>
+let P=[],E=[],V='dash',CF=null,ST=null,PT={},termDB={};
+
+async function api(p,o={}){return(await fetch('/api'+p,{headers:{'Content-Type':'application/json'},...o})).json();}
+async function ld(){
+  P=await api('/podcasts');E=await api('/episodes');
+  E.sort((a,b)=>(b.pub_date?new Date(b.pub_date):0)-(a.pub_date?new Date(a.pub_date):0));
+  buildTermDB();rs();rv();
+}
+
+// Build term database from all done episodes' Module C
+function buildTermDB(){
+  termDB={};
+  E.filter(e=>e.status==='done'&&e.notes).forEach(ep=>{
+    const notes=ep.notes;
+    // Parse "**Term**（English）\nDefinition..." pattern from Module C
+    const dictSection=notes.split(/##\s*(?:模块C|专业名词|名词.*词典)/i)[1]||'';
+    // Match **[Term]**（English）definition... OR **Term**（English）definition...
+    const entries=[...dictSection.matchAll(/\*\*\[?([^\]*]+?)\]?\*\*(?:（([^）]*)）)?([^\n]*(?:\n(?!\*\*)[^\n#]*)*)/g)];
+    entries.forEach(m=>{
+      let name=m[1].trim();const eng=(m[2]||'').trim();
+      let def=m[3].replace(/^[。，,.\s：:]+/,'').trim().replace(/\n/g,' ').trim();
+      // Skip structural labels
+      if(!name||name.length<2||name.length>30)return;
+      if(/^(核心命题|展开论述|话语体系|模块|章节|观点|出处)/.test(name))return;
+      // Clean up name
+      name=name.replace(/\s+/g,' ');
+      if(!termDB[name])termDB[name]={name,eng,def,episodes:[]};
+      if(!termDB[name].episodes.find(x=>x.id===ep.id)){
+        termDB[name].episodes.push({id:ep.id,title:ep.title,podcast:ep.podcast_name});
+      }
+      if(def.length>termDB[name].def.length)termDB[name].def=def;
+    });
+  });
+}
+
+// Inject term highlights into rendered HTML
+function highlightTerms(html){
+  const terms=Object.keys(termDB).sort((a,b)=>b.length-a.length);
+  if(!terms.length)return html;
+  terms.forEach(t=>{
+    const re=new RegExp(`(?<![\\w*])${t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?![\\w*])`,'g');
+    html=html.replace(re,`<span class="term-hl" data-term="${t}">${t}</span>`);
+  });
+  return html;
+}
+
+function rs(){
+  const nc=E.filter(e=>e.status==='new'||e.status==='processing').length;
+  const b=document.getElementById('bdg');b.textContent=nc;b.style.display=nc>0?'':'none';
+  document.getElementById('pl').innerHTML=P.filter(p=>p.name!=='_散装收藏').map(p=>`
+    <div class="pi ${CF===p.id?'act':''}" onclick="fp(${p.id})">
+      ${p.artwork?`<img class="pa" src="${p.artwork}">`:`<div class="pa" style="display:flex;align-items:center;justify-content:center;font-size:10px;">&#127911;</div>`}
+      <span class="pn">${p.name}</span>${p.new_count>0?`<span class="nb">${p.new_count}</span>`:''}
+      <button class="db" onclick="event.stopPropagation();dp(${p.id},'${p.name.replace(/'/g,"\\'")}')">&#10005;</button>
+    </div>`).join('');
+}
+
+function sw(v){V=v;CF=null;document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('act',n.dataset.v===v));rv();}
+function fp(id){CF=CF===id?null:id;V='all';rv();rs();}
+
+function rv(){
+  const m=document.getElementById('mc');
+  ({dash:rDash,pend:rPend,all:()=>rEps(m,null),done:()=>rEps(m,'done'),kg:rKG,fav:rFav}[V]||rEps)(m);
+}
+
+function rDash(el){
+  const n=E.filter(e=>e.status==='new'),d=E.filter(e=>e.status==='done'),p=E.filter(e=>e.status==='processing');
+  el.innerHTML=`<div class="ph"><h2>控制台</h2><div class="acs"><button class="bt bou" onclick="rf(this)">&#8635; 刷新</button><button class="bt bp" onclick="showAdd()">+ 添加</button></div></div>
+    <div class="wf"><div class="ws ${n.length?'act':''}"><div class="wn">1</div><span class="wl">新剧集</span><span class="wd">${n.length}</span></div><div class="ws ${p.length?'act':''}"><div class="wn">2</div><span class="wl">提炼中</span><span class="wd">${p.length}</span></div><div class="ws ${d.length?'act':''}"><div class="wn">3</div><span class="wl">完成</span><span class="wd">${d.length}</span></div></div>
+    <div class="sr"><div class="sc"><div class="nm" style="color:var(--o)">${P.filter(p=>p.name!=='_散装收藏').length}</div><div class="lb">订阅</div></div><div class="sc"><div class="nm">${E.length}</div><div class="lb">剧集</div></div><div class="sc"><div class="nm" style="color:var(--o)">${n.length}</div><div class="lb">待处理</div></div><div class="sc"><div class="nm" style="color:var(--gn)">${d.length}</div><div class="lb">已提炼</div></div></div>
+    ${p.length?`<h3 style="margin-bottom:8px;font-size:12px;">&#9889; 提炼中</h3><div class="el">${p.map(rc).join('')}</div><br>`:''}
+    ${n.length?`<h3 style="margin-bottom:8px;font-size:12px;">最新更新</h3><div class="el">${n.slice(0,6).map(rc).join('')}</div>`
+    :`<div class="emp"><div class="ic">&#127911;</div><h3>暂无新剧集</h3><p>每 30 分钟自动检测</p></div>`}`;
+  p.forEach(e=>poll(e.id));
+}
+
+function rPend(el){
+  let f=E.filter(e=>e.status==='new'||e.status==='processing');
+  if(CF)f=f.filter(e=>e.podcast_id===CF);
+  el.innerHTML=`<div class="ph"><h2>待处理</h2><div class="acs">${f.filter(e=>e.status==='new').length?`<button class="bt bou" onclick="ska()">全部跳过</button>`:''}<button class="bt bou" onclick="rf(this)">&#8635; 刷新</button></div></div>
+    <div class="el">${f.map(rc).join('')||'<div class="emp"><div class="ic">&#128203;</div><h3>没有待处理</h3></div>'}</div>`;
+  f.filter(e=>e.status==='processing').forEach(e=>poll(e.id));
+}
+
+function rEps(el,sf){
+  let f=E;if(CF)f=f.filter(e=>e.podcast_id===CF);
+  const t=sf==='done'?'已提炼':(CF?P.find(p=>p.id===CF)?.name:'全部剧集');
+  el.innerHTML=`<div class="ph"><h2>${t}</h2><div class="acs"><button class="bt bou" onclick="rf(this)">&#8635;</button></div></div>
+    <div class="fb">${['全部','new','processing','done','skipped'].map((x,i)=>{const l=['全部','待处理','提炼中','已提炼','已跳过'];return`<span class="fc ${(i===0&&!sf)||(sf===x)?'act':''}" onclick="rEps(document.getElementById('mc'),${i===0?'null':`'${x}'`})">${l[i]}</span>`;}).join('')}</div>
+    <div class="el">${(sf?f.filter(e=>e.status===sf):f).map(rc).join('')||'<div class="emp"><div class="ic">&#128203;</div><h3>暂无</h3></div>'}</div>`;
+}
+
+function rFav(el){
+  const fav=E.filter(e=>e.starred);
+  el.innerHTML=`<div class="ph"><h2>&#11088; Best of Faye</h2><p style="font-size:11px;color:var(--g);margin-left:10px;">我最喜欢的播客</p></div>
+    <div class="el">${fav.length?fav.map(rc).join(''):'<div class="emp"><div class="ic">&#11088;</div><h3>还没有收藏</h3><p>点击剧集标题旁的星号收藏</p></div>'}</div>`;
+}
+
+// Taxonomy for auto-classification
+const TAXONOMY={
+  "AI 基础理论":{icon:"🧠",color:"#8B5CF6",subs:{"模型架构":{kw:["架构","结构","注意力","参数","模型","attention","layer","architecture","网络","encoder","decoder"]},"训练方法":{kw:["训练","学习","优化","梯度","微调","fine-tune","train","reward","policy","预训练","强化","蒸馏"]},"智能扩展":{kw:["scaling","扩展","涌现","通用","推理时","compute","AGI","智能"]}}},
+  "AI 工程基础设施":{icon:"⚙️",color:"#EF4444",subs:{"硬件与底层":{kw:["GPU","芯片","硬件","cuda","triton","编译","并行","显存","内存","kernel","hardware","FP","精度","量化"]},"系统与协议":{kw:["框架","工具","部署","推理","协议","benchmark","测试","评估","pipeline","infra","基础设施"]}}},
+  "AI 应用与产品":{icon:"🤖",color:"#10B981",subs:{"智能体":{kw:["agent","智能体","自动化","工具调用","任务","规划","执行","agentic","编排"]},"具身与感知":{kw:["具身","机器人","视觉","感知","物理","world model","embodied","动作","操作","遥操","VLA","多模态"]}}},
+  "AI 商业与创业":{icon:"🚀",color:"#F59E0B",subs:{"商业模式":{kw:["商业","收入","模式","变现","飞轮","复购","PMF","ARR","revenue","SaaS","订阅"]},"竞争与护城河":{kw:["护城河","壁垒","竞争","增长","moat","network","生态","平台","垄断"]}}},
+  "经济与金融":{icon:"📈",color:"#3B82F6",subs:{"宏观经济":{kw:["宏观","GDP","通胀","利率","货币","财政","经济","财富效应","消费","周期"]},"投资与交易":{kw:["期权","量化","对冲","交易","投资","基金","估值","融资","股权","IPO","上市"]}}}
+};
+
+function classifyTerm(t){
+  const text=(t.name+' '+t.eng+' '+t.def).toLowerCase();
+  let bestCat='其他',bestSub='未分类',bestScore=0;
+  for(const[cat,v]of Object.entries(TAXONOMY)){
+    for(const[sub,sv]of Object.entries(v.subs)){
+      let score=0;
+      sv.kw.forEach(k=>{if(text.includes(k.toLowerCase()))score++;});
+      if(score>bestScore){bestScore=score;bestCat=cat;bestSub=sub;}
+    }
+  }
+  return{cat:bestCat,sub:bestSub,score:bestScore};
+}
+
+function rKG(el){
+  const terms=Object.values(termDB);
+  if(!terms.length){el.innerHTML=`<div class="ph"><h2>&#9733; 知识图谱</h2></div><div class="emp"><div class="ic">&#128218;</div><h3>暂无数据</h3><p>提炼播客后，词典中的概念会自动出现</p></div>`;return;}
+
+  // Classify all terms
+  const tree={};
+  terms.forEach(t=>{
+    const{cat,sub}=classifyTerm(t);
+    if(!tree[cat])tree[cat]={};
+    if(!tree[cat][sub])tree[cat][sub]=[];
+    tree[cat][sub].push(t);
+  });
+
+  // Render hierarchical view
+  let html=`<div class="ph"><h2>&#9733; 知识图谱</h2><p style="font-size:10px;color:var(--g);margin-left:8px;">${terms.length} 个概念 · ${E.filter(e=>e.status==='done').length} 篇笔记</p></div>`;
+
+  // Render each domain
+  const cats=[...Object.keys(TAXONOMY),'其他'];
+  cats.forEach(cat=>{
+    if(!tree[cat])return;
+    const info=TAXONOMY[cat]||{icon:'📎',color:'#888'};
+    const subs=Object.entries(tree[cat]);
+    const totalTerms=subs.reduce((s,x)=>s+x[1].length,0);
+
+    html+=`<div style="margin-bottom:20px;">
+      <div onclick="this.nextElementSibling.classList.toggle('kg-collapsed')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--w);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:8px;border-left:4px solid ${info.color};">
+        <span style="font-size:18px;">${info.icon}</span>
+        <span style="font-size:14px;font-weight:700;flex:1;">${cat}</span>
+        <span style="font-size:10px;color:var(--g);background:var(--bg);padding:2px 8px;border-radius:10px;">${totalTerms} 个概念</span>
+        <span style="font-size:12px;color:var(--gl);">▼</span>
+      </div>
+      <div style="padding-left:16px;">`;
+
+    subs.forEach(([sub,subTerms])=>{
+      subTerms.sort((a,b)=>b.episodes.length-a.episodes.length);
+      html+=`<div style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:600;color:${info.color};padding:4px 0 6px;display:flex;align-items:center;gap:6px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:${info.color};"></span>${sub}
+          <span style="font-size:9px;color:var(--g);font-weight:400;">(${subTerms.length})</span>
+        </div>
+        <div style="padding-left:12px;border-left:2px solid ${info.color}22;">`;
+
+      subTerms.forEach(t=>{
+        const epLinks=t.episodes.map(e=>`<span class="ke" onclick="openToTerm(${e.id},'${t.name.replace(/'/g,"\\'")}')"><span class="pl">${e.podcast==='_散装收藏'?'散装':e.podcast}</span> →</span>`).join(' ');
+        html+=`<div class="kn" style="margin-bottom:6px;padding:12px 14px;">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+            <span style="font-size:13px;font-weight:700;color:var(--bk);">${t.name}</span>
+            ${t.eng?`<span style="font-size:10px;color:var(--g);">${t.eng}</span>`:''}
+            <span style="font-size:9px;color:var(--g);margin-left:auto;">${t.episodes.length}篇</span>
+          </div>
+          <div style="font-size:11px;line-height:1.6;color:#555;margin-bottom:6px;">${t.def.substring(0,150)}${t.def.length>150?'...':''}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">${epLinks}</div>
+        </div>`;
+      });
+
+      html+=`</div></div>`;
+    });
+
+    html+=`</div></div>`;
+  });
+
+  el.innerHTML=html;
+}
+
+function rc(ep){
+  const sl={new:'新更新',processing:'提炼中',done:'已提炼',skipped:'已跳过'};
+  const sc={new:'tn',processing:'tp',done:'td',skipped:'ts'};
+  const dt=ep.pub_date?new Date(ep.pub_date).toLocaleDateString('zh-CN'):'';
+  const pn=ep.podcast_name==='_散装收藏'?'散装':ep.podcast_name;
+  const j=ep.job;
+  let prog='';
+  if(ep.status==='processing'){const pc=j?j.progress:15;const mg=j?j.message:'处理中';prog=`<div class="pb"><div class="pf" style="width:${pc}%"></div></div><div class="pt"><span class="sp"></span>${mg} (${pc}%)</div>`;setTimeout(()=>poll(ep.id),0);}
+  const starred=ep.starred?'&#11088;':'&#9734;';
+  return`<div class="ec" id="ep-${ep.id}"><div class="et">
+    ${ep.podcast_artwork?`<img class="ea" src="${ep.podcast_artwork}">`:`<div class="ea" style="display:flex;align-items:center;justify-content:center;font-size:14px;">&#127911;</div>`}
+    <div class="ei"><div class="etl"><button class="star-btn" onclick="event.stopPropagation();toggleStar(${ep.id})">${starred}</button>${ep.title}</div>
+      <div class="em"><span class="pl">${pn}</span>${dt?`<span>${dt}</span>`:''}<span class="st ${sc[ep.status]}">${sl[ep.status]}</span></div>
+      ${ep.description&&ep.status!=='done'?`<div class="ed">${ep.description.replace(/</g,'&lt;')}</div>`:''}${prog}
+      <div class="eac">
+        ${ep.status==='new'?`<button class="bt bp bs" onclick="sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="ut(${ep.id})">&#128196; 手动上传</button><button class="bt bou bs" onclick="us(${ep.id},'skipped')">跳过</button>`:''}
+        ${ep.status==='processing'?`<button class="bt brd bs" onclick="ab(${ep.id})">&#9724; 终止</button>`:''}
+        ${ep.status==='skipped'?`<button class="bt bp bs" onclick="sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="ut(${ep.id})">&#128196; 手动上传</button>`:''}
+        ${ep.status==='done'?`<button class="bt bp bs" onclick="od(${ep.id})">&#128196; 查看笔记</button>`:''}
+        ${ep.link?`<a href="${ep.link}" target="_blank" class="bt bou bs" style="text-decoration:none">&#128279;</a>`:''}
+      </div></div></div></div>`;
+}
+
+// --- Drawer with term highlights and backlinks ---
+function od(id){
+  const ep=E.find(e=>e.id===id);
+  document.getElementById('dt').textContent=ep.title;
+  let html=marked.parse(ep.notes||'*暂无*');
+  html=highlightTerms(html);
+  // Add backlinks section
+  const epTerms=Object.values(termDB).filter(t=>t.episodes.find(e=>e.id===id));
+  let bl='';
+  if(epTerms.length){
+    bl=`<div class="backlinks"><h3>&#128279; 本集涉及的核心概念 (${epTerms.length})</h3>${epTerms.map(t=>`<div class="bl-item" onclick="scrollToTerm('${t.name.replace(/'/g,"\\'")}')"><div class="bl-term">${t.name}${t.eng?` (${t.eng})`:''}</div><div class="bl-def">${t.def.substring(0,80)}${t.def.length>80?'...':''}</div></div>`).join('')}</div>`;
+  }
+  document.getElementById('db').innerHTML=html+bl;
+  document.getElementById('drw').classList.add('open');
+  document.getElementById('dov').classList.add('open');
+}
+function cd(){document.getElementById('drw').classList.remove('open');document.getElementById('dov').classList.remove('open');hidePop();}
+
+// Open drawer and scroll to a specific term
+function openToTerm(epId,termName){
+  od(epId);
+  setTimeout(()=>scrollToTerm(termName),300);
+}
+function scrollToTerm(name){
+  const el=document.querySelector(`.term-hl[data-term="${name}"]`);
+  if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.background='rgba(139,92,246,0.3)';setTimeout(()=>el.style.background='',2000);}
+}
+
+// --- Term popover ---
+function hidePop(){document.getElementById('tpop').classList.remove('visible');}
+document.addEventListener('click',e=>{
+  const hl=e.target.closest('.term-hl');
+  if(hl){
+    e.stopPropagation();
+    const name=hl.dataset.term;
+    const t=termDB[name];
+    if(!t){hidePop();return;}
+    const pop=document.getElementById('tpop');
+    const rect=hl.getBoundingClientRect();
+    pop.style.left=Math.min(rect.left,window.innerWidth-380)+'px';
+    pop.style.top=(rect.bottom+8)+'px';
+    pop.innerHTML=`<div class="tp-name">${t.name}${t.eng?` <span class="tp-tag">${t.eng}</span>`:''}</div>
+      <div class="tp-def">${t.def}</div>
+      ${t.episodes.length?`<div class="tp-refs">${t.episodes.map(ep=>`<div class="tp-ref" onclick="openToTerm(${ep.id},'${t.name.replace(/'/g,"\\'")}')">&#128196; ${ep.title.substring(0,40)}...</div>`).join('')}</div>`:''}`;
+    pop.classList.add('visible');
+  } else if(!e.target.closest('.term-pop')){hidePop();}
+});
+
+// --- Actions ---
+async function us(id,s){await api(`/episodes/${id}`,{method:'PATCH',body:JSON.stringify({status:s})});await ld();}
+async function ab(id){await api(`/episodes/${id}/abort`,{method:'POST'});if(PT[id]){clearInterval(PT[id]);delete PT[id];}await ld();}
+async function sp(id){await api(`/episodes/${id}/process`,{method:'POST'});await ld();poll(id);}
+async function ska(){for(const e of E.filter(e=>e.status==='new'))await api(`/episodes/${e.id}`,{method:'PATCH',body:JSON.stringify({status:'skipped'})});await ld();}
+async function toggleStar(id){await api(`/episodes/${id}/star`,{method:'POST'});await ld();}
+
+function ut(id){const ep=E.find(e=>e.id===id);document.getElementById('tt').textContent=`逐字稿：${ep.title}`;document.getElementById('ti').value='';document.getElementById('ti').dataset.eid=id;sm('tm');}
+async function st(){const ta=document.getElementById('ti');const t=ta.value.trim();const id=+ta.dataset.eid;if(!t)return;hm('tm');await api(`/episodes/${id}/transcript`,{method:'POST',body:JSON.stringify({transcript:t})});await ld();poll(id);}
+
+function poll(id){if(PT[id])return;PT[id]=setInterval(async()=>{const j=await api(`/jobs/${id}`);if(j.step==='done'||j.step==='error'){clearInterval(PT[id]);delete PT[id];await ld();return;}const c=document.getElementById(`ep-${id}`);if(c){const b=c.querySelector('.pf');const t=c.querySelector('.pt');if(b)b.style.width=j.progress+'%';if(t)t.innerHTML=`<span class="sp"></span>${j.message} (${j.progress}%)`;}},3000);}
+
+// Search
+let sT;function ds(){clearTimeout(sT);sT=setTimeout(ss,400);}
+async function ss(){const q=document.getElementById('ps').value.trim();const el=document.getElementById('sr');if(!q){el.innerHTML='';return;}el.innerHTML='<div class="sl">搜索中...</div>';const r=await api(`/search?q=${encodeURIComponent(q)}`);if(!r.length){el.innerHTML='<div class="sl">未找到</div>';return;}el.innerHTML=r.map((x,i)=>`<div class="si" onclick="ps(${i})">${x.artwork?`<img src="${x.artwork}">`:''}
+  <div><div class="sn">${x.name}</div><div class="sa">${x.artist||''} · ${x.episode_count||'?'} 集</div></div></div>`).join('');window._sr=r;}
+async function ps(i){const r=window._sr[i];if(!r)return;hm('am');document.getElementById('ps').value='';document.getElementById('sr').innerHTML='';await api('/podcasts',{method:'POST',body:JSON.stringify({name:r.name,rss_url:r.rss_url||null,artwork:r.artwork||null})});await ld();}
+async function apm(){const n=document.getElementById('pnm').value.trim();const r=document.getElementById('prs').value.trim();if(!n)return;hm('am');await api('/podcasts',{method:'POST',body:JSON.stringify({name:n,rss_url:r||null})});document.getElementById('pnm').value='';document.getElementById('prs').value='';await ld();}
+async function dp(id,nm){if(!confirm(`取消订阅「${nm}」？`))return;await api(`/podcasts/${id}`,{method:'DELETE'});if(CF===id)CF=null;await ld();}
+async function ao(){const t=document.getElementById('ot').value.trim();const l=document.getElementById('ol').value.trim();const d=document.getElementById('od').value.trim();if(!t)return;hm('om');await api('/episodes/oneoff',{method:'POST',body:JSON.stringify({title:t,link:l||null,description:d||null})});document.getElementById('ot').value='';document.getElementById('ol').value='';document.getElementById('od').value='';await ld();}
+async function rf(b){b.disabled=true;b.textContent='...';const r=await api('/refresh',{method:'POST'});b.disabled=false;b.innerHTML='&#8635; 刷新';await ld();if(r.new_episodes>0)alert(`发现 ${r.new_episodes} 个新剧集！`);}
+function sm(id){document.getElementById(id).classList.add('vis');}
+function hm(id){document.getElementById(id).classList.remove('vis');}
+function showAdd(){sm('am');setTimeout(()=>document.getElementById('ps').focus(),80);}
+
+ld();setInterval(ld,300000);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){cd();hidePop();}});
+</script>
+</body>
+</html>
