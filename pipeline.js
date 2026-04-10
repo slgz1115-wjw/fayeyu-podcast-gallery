@@ -69,7 +69,12 @@ function transcribeAudio(audioPath, onProgress, onProcess) {
         stdout += line + '\n';
         try {
           const msg = JSON.parse(line);
-          if (msg.message && onProgress) onProgress(msg.message);
+          if (msg.message && onProgress) {
+            const prog = msg.progress != null ? msg.progress : null;
+            // Map transcribe progress (0-90%) to pipeline range (35-70%)
+            const mappedProg = prog != null ? 35 + Math.round(prog * 0.35) : null;
+            onProgress({ step: 'transcribing', progress: mappedProg || 50, message: msg.message });
+          }
         } catch(e) {}
       }
     });
@@ -99,8 +104,8 @@ function transcribeAudio(audioPath, onProgress, onProcess) {
 // --- Step 3: Extract notes with Claude CLI ---
 function extractNotes(transcript, podcastName, episodeTitle, onProcess) {
   return new Promise((resolve, reject) => {
-    // Truncate if too long (Claude context limit)
-    const maxLen = 120000;
+    // Claude Code supports large context; allow up to 500k chars (~3hr podcast)
+    const maxLen = 500000;
     const truncated = transcript.length > maxLen
       ? transcript.substring(0, maxLen) + '\n\n[...逐字稿已截断，以上为前半部分...]'
       : transcript;
