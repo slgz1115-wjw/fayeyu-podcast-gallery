@@ -1,0 +1,5 @@
+node_modules/
+podcasts.db
+audio/
+transcripts/
+ecosystem.config.js
