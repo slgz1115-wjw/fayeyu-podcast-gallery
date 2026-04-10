@@ -27,10 +27,14 @@ def get_duration(path):
 
 def compress_chunk(input_path, start_sec, duration_sec, output_path):
     """Extract and compress a chunk to mono 16kHz 24kbps MP3."""
-    cmd = ["ffmpeg", "-i", input_path, "-ss", str(start_sec), "-t", str(duration_sec),
-           "-ac", "1", "-ar", "16000", "-b:a", "24k", "-y", output_path]
-    subprocess.run(cmd, capture_output=True)
-    return os.path.exists(output_path) and os.path.getsize(output_path) > 0
+    # -ss BEFORE -i for fast seek (input seeking), critical for large files
+    cmd = ["ffmpeg", "-ss", str(int(start_sec)), "-i", input_path, "-t", str(int(duration_sec)),
+           "-ac", "1", "-ar", "16000", "-b:a", "24k", "-y", "-loglevel", "error", output_path]
+    r = subprocess.run(cmd, capture_output=True, timeout=120)
+    ok = os.path.exists(output_path) and os.path.getsize(output_path) > 1000
+    if not ok:
+        log("warning", f"ffmpeg 切片失败: {r.stderr.decode()[:150]}")
+    return ok
 
 def transcribe_with_groq(audio_path):
     """Transcribe using Groq API, auto-splitting long files."""
@@ -76,8 +80,8 @@ def transcribe_with_groq(audio_path):
             os.unlink(chunk_path)
             chunk_path = chunk_path2
 
-        # Transcribe with retry
-        max_retries = 3
+        # Transcribe with retry and rate limit handling
+        max_retries = 5
         for attempt in range(max_retries):
             try:
                 with open(chunk_path, "rb") as f:
@@ -88,12 +92,19 @@ def transcribe_with_groq(audio_path):
                         response_format="text",
                     )
                 all_text.append(result if isinstance(result, str) else str(result))
+                # Small delay between successful chunks to avoid rate limit
+                time.sleep(1)
                 break
             except Exception as e:
                 err_msg = str(e)
-                if attempt < max_retries - 1:
+                if "429" in err_msg or "rate" in err_msg.lower():
+                    # Rate limited — wait longer
+                    wait = min(60, 10 * (attempt + 1))
+                    log("warning", f"第 {i+1} 段被限频，等待 {wait}s 后重试...")
+                    time.sleep(wait)
+                elif attempt < max_retries - 1:
                     log("warning", f"第 {i+1} 段第 {attempt+1} 次失败，重试... ({err_msg[:80]})")
-                    time.sleep(2 * (attempt + 1))
+                    time.sleep(3 * (attempt + 1))
                 else:
                     log("warning", f"第 {i+1} 段转录失败: {err_msg[:100]}")
 
