@@ -180,6 +180,38 @@ app.get('/api/jobs/:id', (req, res) => {
   res.json({ step: 'idle', progress: 0 });
 });
 
+// --- Knowledge Graph edits ---
+db.exec(`CREATE TABLE IF NOT EXISTS kg_edits (
+  term TEXT PRIMARY KEY,
+  action TEXT NOT NULL,
+  new_name TEXT,
+  new_category TEXT,
+  new_subcategory TEXT,
+  user_note TEXT,
+  updated_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// Get all KG edits
+app.get('/api/kg/edits', (req, res) => {
+  res.json(db.prepare('SELECT * FROM kg_edits').all());
+});
+
+// Save a KG edit (delete, rename, move, annotate)
+app.post('/api/kg/edit', (req, res) => {
+  const { term, action, new_name, new_category, new_subcategory, user_note } = req.body;
+  if (!term || !action) return res.status(400).json({ error: 'term and action required' });
+  db.prepare(`INSERT OR REPLACE INTO kg_edits (term, action, new_name, new_category, new_subcategory, user_note, updated_at) VALUES (?,?,?,?,?,?,datetime('now'))`).run(
+    term, action, new_name || null, new_category || null, new_subcategory || null, user_note || null
+  );
+  res.json({ ok: true });
+});
+
+// Remove a KG edit (restore term)
+app.delete('/api/kg/edit/:term', (req, res) => {
+  db.prepare('DELETE FROM kg_edits WHERE term=?').run(req.params.term);
+  res.json({ ok: true });
+});
+
 // Toggle star
 app.post('/api/episodes/:id/star', (req, res) => {
   const id = parseInt(req.params.id);

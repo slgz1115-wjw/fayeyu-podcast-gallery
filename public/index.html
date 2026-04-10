@@ -183,11 +183,13 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--bk);
 <div class="mb" id="tm"><div class="ml" style="width:600px;"><h3 id="tt">上传逐字稿</h3><div class="fg"><textarea id="ti" class="nt" placeholder="粘贴逐字稿..."></textarea></div><div class="ma"><button class="bt bou" onclick="hm('tm')">取消</button><button class="bt bp" onclick="st()">&#9889; 开始提炼</button></div></div></div>
 
 <script>
-let P=[],E=[],V='dash',CF=null,ST=null,PT={},termDB={};
+let P=[],E=[],V='dash',CF=null,ST=null,PT={},termDB={},kgEdits={};
 
 async function api(p,o={}){return(await fetch('/api'+p,{headers:{'Content-Type':'application/json'},...o})).json();}
 async function ld(){
   P=await api('/podcasts');E=await api('/episodes');
+  const editsArr=await api('/kg/edits');
+  kgEdits={};editsArr.forEach(e=>kgEdits[e.term]=e);
   E.sort((a,b)=>(b.pub_date?new Date(b.pub_date):0)-(a.pub_date?new Date(a.pub_date):0));
   buildTermDB();rs();rv();
 }
@@ -328,26 +330,43 @@ function classifyTerm(t){
 }
 
 function rKG(el){
-  // Filter to only established knowledge terms
   const allTerms=Object.values(termDB);
-  const terms=allTerms.filter(isKnowledgeTerm);
+  // Apply edits: delete, rename, move, annotate
+  const terms=allTerms.filter(t=>{
+    const edit=kgEdits[t.name];
+    if(edit&&edit.action==='delete')return false;
+    return isKnowledgeTerm(t);
+  }).map(t=>{
+    const edit=kgEdits[t.name];
+    if(!edit)return t;
+    const copy={...t};
+    if(edit.action==='rename'&&edit.new_name)copy.displayName=edit.new_name;
+    if(edit.user_note)copy.userNote=edit.user_note;
+    if(edit.new_category)copy.forceCategory=edit.new_category;
+    if(edit.new_subcategory)copy.forceSubcategory=edit.new_subcategory;
+    return copy;
+  });
   const filtered=allTerms.length-terms.length;
-  if(!terms.length){el.innerHTML=`<div class="ph"><h2>&#9733; 知识图谱</h2></div><div class="emp"><div class="ic">&#128218;</div><h3>暂无数据</h3><p>提炼播客后，词典中的已有知识概念会自动出现</p></div>`;return;}
 
-  // Classify all terms
+  if(!terms.length){el.innerHTML=`<div class="ph"><h2>&#9733; 知识图谱</h2></div><div class="emp"><div class="ic">&#128218;</div><h3>暂无数据</h3><p>提炼播客后，词典中的知识概念会自动出现</p></div>`;return;}
+
   const tree={};
+  const catList=Object.keys(TAXONOMY);
   terms.forEach(t=>{
-    const{cat,sub}=classifyTerm(t);
+    let cat,sub;
+    if(t.forceCategory&&t.forceSubcategory){cat=t.forceCategory;sub=t.forceSubcategory;}
+    else{const c=classifyTerm(t);cat=c.cat;sub=c.sub;}
     if(!tree[cat])tree[cat]={};
     if(!tree[cat][sub])tree[cat][sub]=[];
     tree[cat][sub].push(t);
   });
 
-  // Render hierarchical view
-  let html=`<div class="ph"><h2>&#9733; 知识图谱</h2><p style="font-size:10px;color:var(--g);margin-left:8px;">${terms.length} 个知识概念 · ${E.filter(e=>e.status==='done').length} 篇笔记${filtered>0?` · 过滤 ${filtered} 个非通用术语`:''}</p></div>`;
+  // Category select options for move
+  const catOpts=catList.map(c=>`<option value="${c}">${c}</option>`).join('');
 
-  // Render each domain
-  const cats=[...Object.keys(TAXONOMY),'其他'];
+  let html=`<div class="ph"><h2>&#9733; 知识图谱</h2><p style="font-size:10px;color:var(--g);margin-left:8px;">${terms.length} 个概念 · ${E.filter(e=>e.status==='done').length} 篇笔记${filtered>0?` · 过滤 ${filtered} 个`:''}</p></div>`;
+
+  const cats=[...catList,'其他'];
   cats.forEach(cat=>{
     if(!tree[cat])return;
     const info=TAXONOMY[cat]||{icon:'📎',color:'#888'};
@@ -358,7 +377,7 @@ function rKG(el){
       <div onclick="this.nextElementSibling.classList.toggle('kg-collapsed')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--w);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:8px;border-left:4px solid ${info.color};">
         <span style="font-size:18px;">${info.icon}</span>
         <span style="font-size:14px;font-weight:700;flex:1;">${cat}</span>
-        <span style="font-size:10px;color:var(--g);background:var(--bg);padding:2px 8px;border-radius:10px;">${totalTerms} 个概念</span>
+        <span style="font-size:10px;color:var(--g);background:var(--bg);padding:2px 8px;border-radius:10px;">${totalTerms}</span>
         <span style="font-size:12px;color:var(--gl);">▼</span>
       </div>
       <div style="padding-left:16px;">`;
@@ -373,25 +392,81 @@ function rKG(el){
         <div style="padding-left:12px;border-left:2px solid ${info.color}22;">`;
 
       subTerms.forEach(t=>{
-        const epLinks=t.episodes.map(e=>`<span class="ke" onclick="openToTerm(${e.id},'${t.name.replace(/'/g,"\\'")}')"><span class="pl">${e.podcast==='_散装收藏'?'散装':e.podcast}</span> →</span>`).join(' ');
-        html+=`<div class="kn" style="margin-bottom:6px;padding:12px 14px;">
-          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
-            <span style="font-size:13px;font-weight:700;color:var(--bk);">${t.name}</span>
+        const dn=t.displayName||t.name;
+        const tn=t.name.replace(/'/g,"\\'");
+        const epLinks=t.episodes.map(e=>`<span class="ke" onclick="openToTerm(${e.id},'${tn}')"><span class="pl">${e.podcast==='_散装收藏'?'散装':e.podcast}</span> →</span>`).join(' ');
+        const noteHtml=t.userNote?`<div style="font-size:10px;color:var(--p);margin:4px 0;padding:4px 8px;background:rgba(139,92,246,0.06);border-radius:4px;">📝 ${t.userNote}</div>`:'';
+        html+=`<div class="kn" style="margin-bottom:6px;padding:12px 14px;" id="kg-${tn.replace(/\s/g,'_')}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-size:13px;font-weight:700;color:var(--bk);">${dn}</span>
             ${t.eng?`<span style="font-size:10px;color:var(--g);">${t.eng}</span>`:''}
             <span style="font-size:9px;color:var(--g);margin-left:auto;">${t.episodes.length}篇</span>
+            <button onclick="kgEdit('${tn}')" style="background:none;border:1px solid var(--gl);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;color:var(--g);">编辑</button>
+            <button onclick="kgDel('${tn}')" style="background:none;border:1px solid var(--gl);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;color:var(--rd);">✕</button>
           </div>
+          ${noteHtml}
           <div style="font-size:11px;line-height:1.6;color:#555;margin-bottom:6px;">${t.def.substring(0,150)}${t.def.length>150?'...':''}</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">${epLinks}</div>
         </div>`;
       });
-
       html+=`</div></div>`;
     });
-
     html+=`</div></div>`;
   });
 
   el.innerHTML=html;
+}
+
+// --- KG Edit actions ---
+async function kgDel(term){
+  if(!confirm(`从知识图谱中移除「${term}」？`))return;
+  await api('/kg/edit',{method:'POST',body:JSON.stringify({term,action:'delete'})});
+  await ld();
+}
+
+function kgEdit(term){
+  const t=termDB[term];if(!t)return;
+  const edit=kgEdits[term]||{};
+  const catList=Object.keys(TAXONOMY);
+  const {cat:curCat,sub:curSub}=classifyTerm(t);
+  const actualCat=edit.new_category||t.forceCategory||curCat;
+  const actualSub=edit.new_subcategory||t.forceSubcategory||curSub;
+
+  // Build subcategory options for each category
+  const subOptsMap={};
+  catList.forEach(c=>{subOptsMap[c]=Object.keys(TAXONOMY[c].subs);});
+
+  const modal=document.createElement('div');
+  modal.className='mb vis';
+  modal.innerHTML=`<div class="ml" style="width:440px;">
+    <h3>编辑概念：${term}</h3>
+    <div class="fg"><label>显示名称</label><input id="ke-name" value="${edit.new_name||t.name}"></div>
+    <div class="fg"><label>所属领域</label><select id="ke-cat" onchange="document.getElementById('ke-sub').innerHTML=window._subOpts[this.value].map(s=>'<option>'+s+'</option>').join('')">${catList.map(c=>`<option ${c===actualCat?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="fg"><label>子分类</label><select id="ke-sub">${(subOptsMap[actualCat]||[]).map(s=>`<option ${s===actualSub?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="fg"><label>我的标注</label><textarea id="ke-note" rows="2" style="font-size:12px;">${edit.user_note||''}</textarea></div>
+    <div class="ma">
+      <button class="bt bou" onclick="this.closest('.mb').remove()">取消</button>
+      <button class="bt bp" onclick="kgSaveEdit('${term.replace(/'/g,"\\'")}')">保存</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  window._subOpts=subOptsMap;
+}
+
+async function kgSaveEdit(term){
+  const newName=document.getElementById('ke-name').value.trim();
+  const newCat=document.getElementById('ke-cat').value;
+  const newSub=document.getElementById('ke-sub').value;
+  const note=document.getElementById('ke-note').value.trim();
+  document.querySelector('.mb.vis:last-child')?.remove();
+  await api('/kg/edit',{method:'POST',body:JSON.stringify({
+    term, action:'edit',
+    new_name:newName!==term?newName:null,
+    new_category:newCat,
+    new_subcategory:newSub,
+    user_note:note||null
+  })});
+  await ld();
 }
 
 function rc(ep){
