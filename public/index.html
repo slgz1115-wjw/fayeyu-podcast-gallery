@@ -283,15 +283,39 @@ function rFav(el){
 
 // Taxonomy for auto-classification
 const TAXONOMY={
-  "AI 基础理论":{icon:"🧠",color:"#8B5CF6",subs:{"模型架构":{kw:["架构","结构","注意力","参数","模型","attention","layer","architecture","网络","encoder","decoder"]},"训练方法":{kw:["训练","学习","优化","梯度","微调","fine-tune","train","reward","policy","预训练","强化","蒸馏"]},"智能扩展":{kw:["scaling","扩展","涌现","通用","推理时","compute","AGI","智能"]}}},
-  "AI 工程基础设施":{icon:"⚙️",color:"#EF4444",subs:{"硬件与底层":{kw:["GPU","芯片","硬件","cuda","triton","编译","并行","显存","内存","kernel","hardware","FP","精度","量化"]},"系统与协议":{kw:["框架","工具","部署","推理","协议","benchmark","测试","评估","pipeline","infra","基础设施"]}}},
-  "AI 应用与产品":{icon:"🤖",color:"#10B981",subs:{"智能体":{kw:["agent","智能体","自动化","工具调用","任务","规划","执行","agentic","编排"]},"具身与感知":{kw:["具身","机器人","视觉","感知","物理","world model","embodied","动作","操作","遥操","VLA","多模态"]}}},
-  "AI 商业与创业":{icon:"🚀",color:"#F59E0B",subs:{"商业模式":{kw:["商业","收入","模式","变现","飞轮","复购","PMF","ARR","revenue","SaaS","订阅"]},"竞争与护城河":{kw:["护城河","壁垒","竞争","增长","moat","network","生态","平台","垄断"]}}},
-  "经济与金融":{icon:"📈",color:"#3B82F6",subs:{"宏观经济":{kw:["宏观","GDP","通胀","利率","货币","财政","经济","财富效应","消费","周期"]},"投资与交易":{kw:["期权","量化","对冲","交易","投资","基金","估值","融资","股权","IPO","上市"]}}}
+  "底层原理":{icon:"🔬",color:"#6366F1",subs:{"数学与逻辑":{kw:["贝叶斯","概率","统计","博弈","纳什","奥卡姆","信息论","熵","马尔可夫","蒙特卡洛","梯度","凸优化","拉格朗日","傅里叶","线性代数","矩阵","向量"]},"物理与复杂系统":{kw:["热力学","混沌","复杂系统","涌现","相变","临界","耗散","反馈","控制论","熵增"]},"哲学与认知":{kw:["存在主义","荒诞","现象学","认知","启发式","偏见","范式","库恩","波普尔","证伪","第一性原理","演绎","归纳","还原论"]}}},
+  "AI 基础理论":{icon:"🧠",color:"#8B5CF6",subs:{"模型架构":{kw:["架构","Transformer","注意力","attention","layer","MoE","encoder","decoder","神经网络","卷积","循环","扩散"]},"训练范式":{kw:["训练","学习","优化","强化学习","预训练","微调","fine-tune","reward","self-play","蒸馏","对齐","RLHF"]},"能力扩展":{kw:["scaling","扩展","涌现","AGI","通用智能","推理时","compute","多模态","上下文"]}}},
+  "AI 工程":{icon:"⚙️",color:"#EF4444",subs:{"硬件与算力":{kw:["GPU","芯片","CUDA","Triton","TPU","算力","显存","FP8","FP16","量化","并行","集群"]},"系统与协议":{kw:["框架","部署","推理","协议","MCP","benchmark","pipeline","infra","基础设施","编译器"]}}},
+  "AI 应用":{icon:"🤖",color:"#10B981",subs:{"智能体与自动化":{kw:["agent","智能体","自动化","工具调用","任务规划","执行","agentic","编排","workflow"]},"具身智能":{kw:["具身","机器人","视觉","感知","物理","world model","VLA","动作","遥操作","端到端"]}}},
+  "商业与战略":{icon:"🚀",color:"#F59E0B",subs:{"商业模式":{kw:["商业","收入","ARR","飞轮","PMF","SaaS","订阅","变现","规模","网络效应"]},"竞争与资本":{kw:["护城河","壁垒","竞争","融资","估值","IPO","上市","风投","VC"]}}},
+  "经济与金融":{icon:"📈",color:"#3B82F6",subs:{"经济学原理":{kw:["马太效应","长尾","供需","边际","博弈论","外部性","机会成本","沉没成本","规模经济","比较优势","通胀","利率","货币","财富效应"]},"投资与交易":{kw:["期权","量化","对冲","交易","alpha","策略","收益","风险","套利","杠杆"]}}}
 };
 
+// Filter: only established knowledge concepts belong in the graph
+// Exclude: guest-coined terms, company/product names, person names, team names
+function isKnowledgeTerm(t){
+  const def=t.def||'';
+  // Blacklist guest-coined / podcast-specific
+  if(def.includes('嘉宾定义')||def.includes('嘉宾/受访者定义')||def.includes('受访者定义'))return false;
+  // Blacklist team/product/person/org/book names
+  if(/^(SEED|萤火|Tilang|OpenRouter|豆包|TopLin|ImageNet|通讯作者|金刚经|道德经|连续思维|技术的自我)/.test(t.name))return false;
+  if(t.name.length<2||t.name.length>25)return false;
+  // Blacklist if definition starts with specific org context
+  if(/^(字节|阿里|腾讯|百度|幻方|DeepSeek|华为|北京大学|浙江大学).{0,5}(的|推出|团队|项目|发起)/.test(def))return false;
+  // Must have English equivalent OR match taxonomy keywords
+  const text=(t.name+' '+(t.eng||'')+' '+def).toLowerCase();
+  for(const cat of Object.values(TAXONOMY)){
+    for(const sub of Object.values(cat.subs)){
+      if(sub.kw.some(k=>text.includes(k.toLowerCase())))return true;
+    }
+  }
+  // Accept if has recognized English term
+  if(t.eng&&t.eng.length>3&&!/[一-龥]/.test(t.eng))return true;
+  return false;
+}
+
 function classifyTerm(t){
-  const text=(t.name+' '+t.eng+' '+t.def).toLowerCase();
+  const text=(t.name+' '+(t.eng||'')+' '+(t.def||'')).toLowerCase();
   let bestCat='其他',bestSub='未分类',bestScore=0;
   for(const[cat,v]of Object.entries(TAXONOMY)){
     for(const[sub,sv]of Object.entries(v.subs)){
@@ -304,8 +328,11 @@ function classifyTerm(t){
 }
 
 function rKG(el){
-  const terms=Object.values(termDB);
-  if(!terms.length){el.innerHTML=`<div class="ph"><h2>&#9733; 知识图谱</h2></div><div class="emp"><div class="ic">&#128218;</div><h3>暂无数据</h3><p>提炼播客后，词典中的概念会自动出现</p></div>`;return;}
+  // Filter to only established knowledge terms
+  const allTerms=Object.values(termDB);
+  const terms=allTerms.filter(isKnowledgeTerm);
+  const filtered=allTerms.length-terms.length;
+  if(!terms.length){el.innerHTML=`<div class="ph"><h2>&#9733; 知识图谱</h2></div><div class="emp"><div class="ic">&#128218;</div><h3>暂无数据</h3><p>提炼播客后，词典中的已有知识概念会自动出现</p></div>`;return;}
 
   // Classify all terms
   const tree={};
@@ -317,7 +344,7 @@ function rKG(el){
   });
 
   // Render hierarchical view
-  let html=`<div class="ph"><h2>&#9733; 知识图谱</h2><p style="font-size:10px;color:var(--g);margin-left:8px;">${terms.length} 个概念 · ${E.filter(e=>e.status==='done').length} 篇笔记</p></div>`;
+  let html=`<div class="ph"><h2>&#9733; 知识图谱</h2><p style="font-size:10px;color:var(--g);margin-left:8px;">${terms.length} 个知识概念 · ${E.filter(e=>e.status==='done').length} 篇笔记${filtered>0?` · 过滤 ${filtered} 个非通用术语`:''}</p></div>`;
 
   // Render each domain
   const cats=[...Object.keys(TAXONOMY),'其他'];
