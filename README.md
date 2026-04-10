@@ -1,169 +1,157 @@
-# Fayeyu's Podcast Gallery 🎙️
+<p align="center">
+  <img src="public/logo.svg" width="80" />
+</p>
 
-> 播客订阅、自动转录、AI 内容提炼与知识图谱构建的一站式工作站。
+<h1 align="center">Fayeyu's Podcast Gallery</h1>
 
-![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js)
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)
-![Claude](https://img.shields.io/badge/Claude_Code-Powered-FF6A00)
-![License](https://img.shields.io/badge/license-MIT-blue)
+<p align="center">
+  <strong>播客订阅 &rarr; 全自动转录 &rarr; AI 内容提炼 &rarr; 知识图谱</strong><br>
+  一个人的播客学习工作站
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-18+-339933?logo=node.js" />
+  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python" />
+  <img src="https://img.shields.io/badge/Groq_Whisper-Transcription-F55036" />
+  <img src="https://img.shields.io/badge/Claude_Code-Content_Extraction-FF6A00" />
+</p>
 
 ---
 
-## 功能全景
+## What is this?
 
-### 🔔 播客订阅与更新检测
-- 输入播客名称，**自动从 Apple Podcasts 搜索并获取 RSS 链接**
-- 每 30 分钟自动检测 RSS 更新，新剧集实时通知
-- 支持「喂入单集链接」——不在订阅范围的播客也能直接加入处理
+> 你有没有过这种体验：听了一期很好的播客，想记住里面的核心观点，但过几天就忘了？
 
-### ⚡ 全自动提炼流水线
-点击「自动提炼」，系统全自动完成：
+**Fayeyu's Podcast Gallery** 解决的就是这个问题。它是一个**全自动**的播客知识提炼系统：
 
+- 你只需要**点一个按钮**
+- 系统自动完成：下载音频 &rarr; Groq Whisper 极速转录 &rarr; Claude AI 按专业方法论提炼结构化笔记
+- 最后生成一张**可交互的知识图谱**，把所有播客中的核心概念串联起来
+
+---
+
+## Screenshots
+
+### 控制台 — 一眼看清所有状态
+![Dashboard](screenshots/01-dashboard.png)
+> 订阅播客数量、新剧集、提炼进度、一目了然
+
+### 全自动提炼 — 点一个按钮搞定一切
+![Done Episodes](screenshots/03-done.png)
+> 点击「自动提炼」后系统全自动：下载 &rarr; 转录 &rarr; AI 提炼，进度条实时更新
+
+### 笔记抽屉 — 三模块结构化输出
+![Notes Drawer](screenshots/04-notes-drawer.png)
+> 右侧滑出抽屉，Markdown 渲染。每篇笔记包含：**反共识金句** + **分章节核心观点** + **专业名词词典**
+
+### 知识图谱 — 跨播客概念网络
+![Knowledge Graph](screenshots/05-knowledge-graph.png)
+> 所有播客中提到的专业概念，按 6 大领域自动分类。概念可编辑、可移动、可标注。点击概念直接跳转到笔记原文。
+
+### 搜索订阅 — 输入名字自动获取 RSS
+![Search](screenshots/07-search.png)
+> 输入播客名称，自动从 Apple Podcasts 搜索，一键订阅。每 30 分钟自动检测新剧集。
+
+---
+
+## Core Features
+
+### 1. 播客订阅与监测
+- 输入名称自动搜索 Apple Podcasts 并获取 RSS
+- 每 30 分钟自动检测更新
+- 「喂入单集链接」— 非订阅播客也能直接加入
+
+### 2. 全自动提炼流水线
 ```
-下载音频（RSS enclosure）
-    ↓
-Groq Whisper 极速转录（1h 播客 ≈ 30s）
-    ↓
-Claude Code 按 Skill 提炼三模块笔记
-    ↓
-笔记归档，进度条实时显示
+点击「自动提炼」
+     |
+     v
+[下载音频] RSS enclosure, 自动重试, 断点续传
+     |
+     v
+[Groq Whisper 转录] 1h 播客 ≈ 2min, 自动分片, 限频重试
+     |
+     v
+[Claude AI 提炼] 按 podcast-notion-notes Skill 输出三模块笔记
+     |
+     v
+[保存 + 进度条实时更新]
 ```
 
-### 📝 三模块结构化笔记（基于 podcast-notion-notes Skill）
+### 3. 三模块结构化笔记
 
 | 模块 | 内容 | 标准 |
 |------|------|------|
-| **反共识金句** | 10-20 条与常识相悖但有完整论证的观点 | 放在最前面作为快速索引 |
-| **分章节核心观点** | 按话题分章，每章含核心命题、展开论述、话语体系 | 还原完整论述结构，不简化为列表 |
-| **专业名词词典** | AI/经济学/哲学/行业术语 + 嘉宾自创概念 | 通俗解释 + 本集语境说明 |
+| **反共识金句** | 10-20 条与常识相悖但有论证的观点 | 放在最前面作为快速索引 |
+| **分章节核心观点** | 按话题分章，含核心命题 + 展开论述 + 话语体系 | 还原完整论述结构，保留原话风格 |
+| **专业名词词典** | AI / 经济学 / 哲学等专业术语 | 通俗解释 + 本集语境说明 |
 
-### 🧠 知识图谱（Obsidian 风格）
+### 4. 知识图谱（Obsidian 风格）
+- **6 大领域分类**：底层原理 / AI 基础理论 / AI 工程 / AI 应用 / 商业与战略 / 经济与金融
+- **双向链接**：概念 &harr; 笔记原文，点击跳转 + 高亮闪烁
+- **术语弹出卡片**：笔记中的专业术语紫色高亮，点击弹出定义 + 跨播客引用
+- **可编辑**：删除、重命名、移动分类、添加个人标注
+- **智能过滤**：自动排除嘉宾自创概念和产品名，只保留通用知识
 
-从已提炼笔记的词典模块中自动提取术语，按 **五大领域** 分层组织：
-
-```
-🧠 AI 基础理论
-  ├─ 模型架构：Transformer, MoE, Flash Attention...
-  ├─ 训练方法：强化学习, 预训练, Self-Play...
-  └─ 智能扩展：Test-time Compute Scaling, AGI...
-
-⚙️ AI 工程基础设施
-  ├─ 硬件与底层：CUDA, Triton, FP8...
-  └─ 系统与协议：MCP, Benchmark, Infra...
-
-🤖 AI 应用与产品
-  ├─ 智能体：Agentic Model, 端到端...
-  └─ 具身与感知：VLA, 世界模型, 遥操作...
-
-🚀 AI 商业与创业
-  ├─ 商业模式：ARR, 数据飞轮...
-  └─ 竞争与护城河...
-
-📈 经济与金融
-  ├─ 宏观经济：财富效应...
-  └─ 投资与交易：期权, 量化交易...
-```
-
-**双向链接**：
-- 知识图谱 → 点击概念 → 跳转到笔记原文中该术语出现的位置
-- 笔记正文 → 术语自动紫色高亮 → 点击弹出定义卡片 + 跨播客引用
-
-### ⭐ Best of Faye
+### 5. Best of Faye
 星标收藏你最喜欢的播客剧集，形成个人精选库。
 
 ---
 
-## 技术栈
+## Tech Stack
 
-| 层级 | 技术 |
-|------|------|
-| 前端 | Vanilla JS + marked.js（Markdown 渲染） |
-| 后端 | Node.js + Express |
-| 数据库 | SQLite（better-sqlite3） |
-| 转录 | Groq Whisper API（极速）/ mlx-whisper（Apple Silicon 本地）/ faster-whisper（CPU 本地） |
-| 内容提炼 | Claude Code CLI（`claude -p`） |
-| RSS 解析 | rss-parser |
-| 定时任务 | node-cron（每 30 分钟检测更新） |
-| 进程管理 | pm2 |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Vanilla JS + marked.js |
+| Backend | Node.js + Express + SQLite |
+| Transcription | **Groq Whisper API** (cloud, ultra-fast) > mlx-whisper (Apple Silicon) > faster-whisper (CPU) |
+| AI Extraction | Claude Code CLI (`claude -p`) |
+| RSS | rss-parser + node-cron (30min interval) |
+| Process Manager | pm2 |
 
 ---
 
-## 快速开始
+## Quick Start
 
-### 前置条件
+### Prerequisites
+- Node.js 18+, Python 3.10+, ffmpeg
+- [Claude Code](https://claude.ai/code) installed & logged in
+- [Groq API Key](https://console.groq.com/keys) (free)
 
-- Node.js 18+
-- Python 3.10+
-- [Claude Code CLI](https://claude.ai/code) 已安装并登录
-- Groq API Key（免费，从 [console.groq.com](https://console.groq.com/keys) 获取）
-
-### 安装
-
+### Install & Run
 ```bash
 git clone https://github.com/slgz1115-wjw/fayeyu-podcast-gallery.git
 cd fayeyu-podcast-gallery
 npm install
-pip3 install faster-whisper  # 或 pip3 install mlx-whisper（Apple Silicon）
-```
+pip3 install faster-whisper groq
 
-### 配置
-
-```bash
-# 创建 ecosystem 配置
+# Configure
 cat > ecosystem.config.js << 'EOF'
 module.exports = {
   apps: [{
     name: 'podcast-gallery',
     script: 'server.js',
-    env: {
-      GROQ_API_KEY: 'your_groq_api_key_here',
-    }
+    env: { GROQ_API_KEY: 'your_key_here' }
   }]
 };
 EOF
-```
 
-### 启动
-
-```bash
+# Start
 pm2 start ecosystem.config.js
-pm2 save
-
-# 访问 http://localhost:3456
-```
-
-### 使用流程
-
-1. 在搜索框输入播客名称（如「晚点聊」），自动获取 RSS 并拉取剧集
-2. 点击「⚡ 自动提炼」→ 系统自动下载、转录、提炼
-3. 进度条实时显示处理状态
-4. 完成后点「查看笔记」→ 右侧抽屉展示格式化笔记
-5. 在「知识图谱」页面浏览跨播客的概念网络
-
----
-
-## 项目结构
-
-```
-├── server.js          # Express 后端，API 路由，RSS 抓取
-├── pipeline.js        # 提炼流水线：下载 → 转录 → Claude 提炼
-├── transcribe.py      # 多引擎转录脚本（Groq > mlx-whisper > faster-whisper）
-├── ecosystem.config.js # pm2 配置（含 API keys）
-├── public/
-│   ├── index.html     # 前端单页应用
-│   └── logo.svg       # Logo
-├── audio/             # 临时音频文件（处理后自动清理）
-└── transcripts/       # 临时转录文件
+# Visit http://localhost:3456
 ```
 
 ---
 
-## Credits
-
-- 内容提炼方法论来自 [podcast-notion-notes](https://claude.ai) Skill
-- 转录引擎：[Groq](https://groq.com)（云端极速）、[mlx-whisper](https://github.com/ml-explore/mlx-examples)（Apple Silicon）
-- AI 提炼：[Claude Code](https://claude.ai/code) by Anthropic
+## Project Structure
+```
+server.js          # Express API, RSS, SQLite
+pipeline.js        # Download → Transcribe → Claude extract
+transcribe.py      # Multi-engine: Groq > mlx-whisper > faster-whisper
+public/index.html  # Frontend SPA
+public/logo.svg    # Logo
+```
 
 ---
 
-*Built with Claude Code* 🤖
+<p align="center"><em>Built with Claude Code</em></p>
