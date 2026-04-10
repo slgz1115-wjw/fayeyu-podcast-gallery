@@ -570,3 +570,19 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){cd();hidePop();}});
 </script>
 </body>
 </html>
+<script>
+// URL param router for screenshots
+(function(){
+  const p=new URLSearchParams(location.search);
+  const v=p.get('view');
+  if(v){setTimeout(()=>{
+    if(v==='pend')sw('pend');
+    if(v==='done')sw('done');
+    if(v==='kg')sw('kg');
+    if(v==='fav')sw('fav');
+    if(v==='all')sw('all');
+    if(v==='notes'){sw('done');setTimeout(()=>{const b=document.querySelector('.bp.bs');if(b)b.click();},500);}
+    if(v==='search'){setTimeout(()=>showAdd(),300);}
+  },1500);}
+})();
+</script>
