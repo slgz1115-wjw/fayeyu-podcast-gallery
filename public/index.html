@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fayeyu's Podcast Gallery</title>
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -50,11 +51,10 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--bk);
 /* Stats & Workflow */
 .wf{display:flex;margin-bottom:18px;background:var(--w);border-radius:9px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
 .ws{flex:1;padding:10px 12px;text-align:center;border-right:1px solid rgba(0,0,0,0.03);}.ws:last-child{border:none;}
-.ws .wn{width:22px;height:22px;border-radius:50%;background:var(--bg);color:var(--g);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-bottom:2px;}
-.ws.act .wn{background:var(--o);color:white;}
-.ws .wl{font-size:10px;font-weight:500;display:block;}.ws .wd{font-size:9px;color:var(--g);margin-top:1px;}
+.ws .wl{font-size:11px;font-weight:600;display:block;}.ws .wd{font-size:18px;font-weight:700;color:var(--bk);margin-top:4px;}
+.ws.act .wd{color:var(--o);}
 .sr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
-.sc{background:var(--w);border-radius:9px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.sc{background:var(--w);border-radius:9px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);text-align:center;}
 .sc .nm{font-size:22px;font-weight:700;}.sc .lb{font-size:9px;color:var(--g);margin-top:1px;}
 
 /* Episode Cards */
@@ -155,7 +155,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--bk);
 <body>
 <div class="app">
   <aside class="sb">
-    <div class="sb-h"><h1>Fayeyu's Podcast Gallery</h1><p>播客订阅 & 内容提炼</p></div>
+    <div class="sb-h"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><img src="/logo.svg" style="width:32px;height:32px;border-radius:8px;"><h1>Fayeyu's Podcast Gallery</h1></div><p>播客订阅 & 内容提炼</p></div>
     <nav class="sb-nav">
       <div class="ni act" data-v="dash" onclick="sw('dash')"><span>&#9670;</span>控制台</div>
       <div class="ni" data-v="pend" onclick="sw('pend')"><span>&#9679;</span>待处理<span class="bdg" id="bdg" style="display:none">0</span></div>
@@ -251,7 +251,7 @@ function rv(){
 function rDash(el){
   const n=E.filter(e=>e.status==='new'),d=E.filter(e=>e.status==='done'),p=E.filter(e=>e.status==='processing');
   el.innerHTML=`<div class="ph"><h2>控制台</h2><div class="acs"><button class="bt bou" onclick="rf(this)">&#8635; 刷新</button><button class="bt bp" onclick="showAdd()">+ 添加</button></div></div>
-    <div class="wf"><div class="ws ${n.length?'act':''}"><div class="wn">1</div><span class="wl">新剧集</span><span class="wd">${n.length}</span></div><div class="ws ${p.length?'act':''}"><div class="wn">2</div><span class="wl">提炼中</span><span class="wd">${p.length}</span></div><div class="ws ${d.length?'act':''}"><div class="wn">3</div><span class="wl">完成</span><span class="wd">${d.length}</span></div></div>
+    <div class="wf"><div class="ws ${n.length?'act':''}"><span class="wl">新剧集</span><span class="wd">${n.length} 条</span></div><div class="ws ${p.length?'act':''}"><span class="wl">提炼中</span><span class="wd">${p.length} 条</span></div><div class="ws ${d.length?'act':''}"><span class="wl">已完成</span><span class="wd">${d.length} 篇</span></div></div>
     <div class="sr"><div class="sc"><div class="nm" style="color:var(--o)">${P.filter(p=>p.name!=='_散装收藏').length}</div><div class="lb">订阅</div></div><div class="sc"><div class="nm">${E.length}</div><div class="lb">剧集</div></div><div class="sc"><div class="nm" style="color:var(--o)">${n.length}</div><div class="lb">待处理</div></div><div class="sc"><div class="nm" style="color:var(--gn)">${d.length}</div><div class="lb">已提炼</div></div></div>
     ${p.length?`<h3 style="margin-bottom:8px;font-size:12px;">&#9889; 提炼中</h3><div class="el">${p.map(rc).join('')}</div><br>`:''}
     ${n.length?`<h3 style="margin-bottom:8px;font-size:12px;">最新更新</h3><div class="el">${n.slice(0,6).map(rc).join('')}</div>`

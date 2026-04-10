@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6A00"/>
+      <stop offset="100%" stop-color="#FF8C33"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="60" cy="60" r="56" fill="#1A1A1A"/>
+  <!-- Headphone shape -->
+  <path d="M30 62 C30 42, 42 28, 60 28 C78 28, 90 42, 90 62" fill="none" stroke="url(#g1)" stroke-width="6" stroke-linecap="round"/>
+  <!-- Left ear -->
+  <rect x="24" y="56" width="14" height="22" rx="7" fill="url(#g1)"/>
+  <!-- Right ear -->
+  <rect x="82" y="56" width="14" height="22" rx="7" fill="url(#g1)"/>
+  <!-- Waveform lines -->
+  <line x1="48" y1="50" x2="48" y2="72" stroke="#FF6A00" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <line x1="55" y1="44" x2="55" y2="78" stroke="#FF6A00" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+  <line x1="62" y1="48" x2="62" y2="74" stroke="#FF8C33" stroke-width="3" stroke-linecap="round"/>
+  <line x1="69" y1="42" x2="69" y2="80" stroke="#FF8C33" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+  <line x1="76" y1="50" x2="76" y2="72" stroke="#FF8C33" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <!-- Star -->
+  <circle cx="96" cy="30" r="10" fill="#FF6A00"/>
+  <text x="96" y="34" text-anchor="middle" fill="white" font-size="14" font-weight="bold">F</text>
+</svg>
