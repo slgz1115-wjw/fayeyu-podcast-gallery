@@ -56,10 +56,10 @@ function transcribeAudio(audioPath, updateProgress, onProcess) {
 
     const scriptPath = path.join(__dirname, 'transcribe.py');
     const txtPath = audioPath.replace(/\.[^.]+$/, '.txt');
-    const proc = spawn(process.env.PYTHON_PATH || '/opt/miniconda3/bin/python3', [scriptPath, audioPath, txtPath], {
+    const pythonCmd = process.env.PYTHON_PATH || 'python3';
+    const proc = spawn(pythonCmd, [scriptPath, audioPath, txtPath], {
       env: {
         ...process.env,
-        PATH: '/opt/miniconda3/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || ''),
         GROQ_API_KEY: process.env.GROQ_API_KEY || '',
       },
     });

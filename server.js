@@ -276,4 +276,5 @@ cron.schedule('*/30 * * * *', async () => {
   for (const p of podcasts) { try { const n = await fetchEpisodes(p.id, p.rss_url); if(n>0) console.log(`[cron] ${p.name}: ${n} new`); } catch(e) { console.error(e); } }
 });
 
-app.listen(3456, () => console.log("Fayeyu's Podcast Gallery running at http://localhost:3456"));
+const PORT = process.env.PORT || 3456;
+app.listen(PORT, () => console.log(`Fayeyu's Podcast Gallery running on port ${PORT}`));

@@ -3,3 +3,4 @@ podcasts.db
 audio/
 transcripts/
 ecosystem.config.js
+.DS_Store
