@@ -10,7 +10,9 @@ const { runPipeline, extractNotes } = require('./pipeline');
 
 const app = express();
 const parser = new Parser({ customFields: { item: [['enclosure', 'enclosure']] } });
-const db = new Database(path.join(__dirname, 'podcasts.db'));
+// Use /data for persistent storage on Railway, fallback to local
+const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+const db = new Database(path.join(DATA_DIR, 'podcasts.db'));
 const TRANSCRIPTS_DIR = path.join(__dirname, 'transcripts');
 if (!fs.existsSync(TRANSCRIPTS_DIR)) fs.mkdirSync(TRANSCRIPTS_DIR);
 
