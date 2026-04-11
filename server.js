@@ -8,13 +8,47 @@ const http = require('http');
 const fs = require('fs');
 const { runPipeline, extractNotes } = require('./pipeline');
 
+const crypto = require('crypto');
 const app = express();
 const parser = new Parser({ customFields: { item: [['enclosure', 'enclosure']] } });
-// Use /data for persistent storage on Railway, fallback to local
 const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
 const db = new Database(path.join(DATA_DIR, 'podcasts.db'));
 const TRANSCRIPTS_DIR = path.join(__dirname, 'transcripts');
 if (!fs.existsSync(TRANSCRIPTS_DIR)) fs.mkdirSync(TRANSCRIPTS_DIR);
+
+// --- Auth ---
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'fayeyu2026';
+const sessions = new Map(); // token -> { created, expires }
+
+function generateToken() { return crypto.randomBytes(32).toString('hex'); }
+function isAdmin(req) {
+  const token = req.headers['x-auth-token'] || req.query.token;
+  if (!token) return false;
+  const s = sessions.get(token);
+  if (!s) return false;
+  if (Date.now() > s.expires) { sessions.delete(token); return false; }
+  return true;
+}
+function requireAdmin(req, res, next) {
+  if (isAdmin(req)) return next();
+  res.status(401).json({ error: 'unauthorized', message: '需要管理员登录' });
+}
+
+// Login
+app.post('/api/auth/login', express.json(), (req, res) => {
+  if (req.body.password === ADMIN_PASSWORD) {
+    const token = generateToken();
+    sessions.set(token, { created: Date.now(), expires: Date.now() + 7 * 24 * 60 * 60 * 1000 }); // 7 days
+    res.json({ ok: true, token });
+  } else {
+    res.status(401).json({ error: 'wrong password' });
+  }
+});
+
+// Check auth status
+app.get('/api/auth/check', (req, res) => {
+  res.json({ isAdmin: isAdmin(req) });
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -75,7 +109,7 @@ app.get('/api/podcasts', (req, res) => {
   `).all());
 });
 
-app.post('/api/podcasts', async (req, res) => {
+app.post('/api/podcasts', requireAdmin, async (req, res) => {
   const { name, rss_url, artwork } = req.body;
   if (!name) return res.status(400).json({ error: 'name required' });
   const info = db.prepare('INSERT INTO podcasts (name, rss_url, artwork) VALUES (?, ?, ?)').run(name, rss_url || null, artwork || null);
@@ -83,7 +117,7 @@ app.post('/api/podcasts', async (req, res) => {
   res.json({ id: info.lastInsertRowid });
 });
 
-app.delete('/api/podcasts/:id', (req, res) => {
+app.delete('/api/podcasts/:id', requireAdmin, (req, res) => {
   db.prepare('DELETE FROM episodes WHERE podcast_id=?').run(req.params.id);
   db.prepare('DELETE FROM podcasts WHERE id=?').run(req.params.id);
   res.json({ ok: true });
@@ -101,7 +135,7 @@ app.get('/api/episodes', (req, res) => {
   res.json(rows);
 });
 
-app.patch('/api/episodes/:id', (req, res) => {
+app.patch('/api/episodes/:id', requireAdmin, (req, res) => {
   const { status, notes } = req.body;
   if (status) db.prepare('UPDATE episodes SET status=? WHERE id=?').run(status, req.params.id);
   if (notes !== undefined) db.prepare('UPDATE episodes SET notes=? WHERE id=?').run(notes, req.params.id);
@@ -109,7 +143,7 @@ app.patch('/api/episodes/:id', (req, res) => {
 });
 
 // ========== CORE: Start full auto pipeline ==========
-app.post('/api/episodes/:id/process', async (req, res) => {
+app.post('/api/episodes/:id/process', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   const ep = db.prepare(`SELECT e.*, p.name as podcast_name FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.id=?`).get(id);
   if (!ep) return res.status(404).json({ error: 'not found' });
@@ -147,7 +181,7 @@ app.post('/api/episodes/:id/process', async (req, res) => {
 });
 
 // Manual transcript upload (fallback for no-audio episodes)
-app.post('/api/episodes/:id/transcript', async (req, res) => {
+app.post('/api/episodes/:id/transcript', requireAdmin, async (req, res) => {
   const { transcript } = req.body;
   const id = parseInt(req.params.id);
   if (!transcript) return res.status(400).json({ error: 'transcript required' });
@@ -199,7 +233,7 @@ app.get('/api/kg/edits', (req, res) => {
 });
 
 // Save a KG edit (delete, rename, move, annotate)
-app.post('/api/kg/edit', (req, res) => {
+app.post('/api/kg/edit', requireAdmin, (req, res) => {
   const { term, action, new_name, new_category, new_subcategory, user_note } = req.body;
   if (!term || !action) return res.status(400).json({ error: 'term and action required' });
   db.prepare(`INSERT OR REPLACE INTO kg_edits (term, action, new_name, new_category, new_subcategory, user_note, updated_at) VALUES (?,?,?,?,?,?,datetime('now'))`).run(
@@ -209,13 +243,13 @@ app.post('/api/kg/edit', (req, res) => {
 });
 
 // Remove a KG edit (restore term)
-app.delete('/api/kg/edit/:term', (req, res) => {
+app.delete('/api/kg/edit/:term', requireAdmin, (req, res) => {
   db.prepare('DELETE FROM kg_edits WHERE term=?').run(req.params.term);
   res.json({ ok: true });
 });
 
 // Toggle star
-app.post('/api/episodes/:id/star', (req, res) => {
+app.post('/api/episodes/:id/star', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
   const ep = db.prepare('SELECT starred FROM episodes WHERE id=?').get(id);
   const newVal = ep && ep.starred ? 0 : 1;
@@ -224,7 +258,7 @@ app.post('/api/episodes/:id/star', (req, res) => {
 });
 
 // Abort a running pipeline
-app.post('/api/episodes/:id/abort', (req, res) => {
+app.post('/api/episodes/:id/abort', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
   const procs = jobProcesses.get(id);
   if (procs) {
@@ -236,7 +270,7 @@ app.post('/api/episodes/:id/abort', (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/episodes/oneoff', async (req, res) => {
+app.post('/api/episodes/oneoff', requireAdmin, async (req, res) => {
   const { title, link, description } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
   let oneoff = db.prepare(`SELECT id FROM podcasts WHERE name='_散装收藏'`).get();
@@ -246,7 +280,7 @@ app.post('/api/episodes/oneoff', async (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/refresh', async (req, res) => {
+app.post('/api/refresh', requireAdmin, async (req, res) => {
   const podcasts = db.prepare(`SELECT * FROM podcasts WHERE rss_url IS NOT NULL AND name != '_散装收藏'`).all();
   let total = 0;
   for (const p of podcasts) { try { total += await fetchEpisodes(p.id, p.rss_url); } catch(e) { console.error(e); } }

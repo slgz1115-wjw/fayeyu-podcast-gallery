@@ -165,7 +165,8 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--bk);
       <div class="ni" data-v="fav" onclick="sw('fav')"><span>&#11088;</span>Best of Faye</div>
     </nav>
     <div class="sb-sec"><h3>订阅列表</h3><div id="pl"></div></div>
-    <div class="sb-bt"><button class="ba" onclick="showAdd()">+ 添加播客订阅</button><button class="bo" onclick="sm('om')">&#128279; 喂入单集链接</button></div>
+    <div style="padding:6px 12px;font-size:11px;color:rgba(255,255,255,0.4);border-top:1px solid rgba(255,255,255,0.06);" id="authBtn"></div>
+    <div class="sb-bt"><button class="ba admin-only" onclick="showAdd()">+ 添加播客订阅</button><button class="bo admin-only" onclick="sm('om')">&#128279; 喂入单集链接</button></div>
   </aside>
   <main class="mn" id="mc"></main>
 </div>
@@ -178,21 +179,56 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--bk);
 <div class="term-pop" id="tpop"></div>
 
 <!-- Modals -->
+<div class="mb" id="lm"><div class="ml" style="width:360px;text-align:center;">
+  <h3>&#128274; 管理员登录</h3>
+  <p style="font-size:12px;color:var(--g);margin-bottom:16px;">登录后可以添加播客、提炼笔记、编辑知识图谱</p>
+  <div class="fg"><input type="password" id="lpw" placeholder="输入管理员密码" onkeydown="if(event.key==='Enter')doLogin()" style="text-align:center;font-size:15px;padding:12px;"></div>
+  <div id="lerr" style="color:var(--rd);font-size:12px;margin-bottom:8px;"></div>
+  <div class="ma" style="justify-content:center;"><button class="bt bp" style="width:100%;padding:10px;" onclick="doLogin()">登录</button></div>
+  <p style="font-size:10px;color:var(--gl);margin-top:12px;">访客可以自由浏览所有内容</p>
+</div></div>
 <div class="mb" id="am"><div class="ml"><h3>添加播客订阅</h3><div class="fg"><label>搜索播客名称</label><input id="ps" placeholder="输入名称自动搜索" oninput="ds()"></div><div class="srs" id="sr"></div><hr style="border:none;border-top:1px solid #eee;margin:8px 0;"><div class="fg"><label>或手动填写</label><input id="pnm" placeholder="播客名称" style="margin-bottom:4px;"><input id="prs" placeholder="RSS 链接（可选）"></div><div class="ma"><button class="bt bou" onclick="hm('am')">取消</button><button class="bt bp" onclick="apm()">手动添加</button></div></div></div>
 <div class="mb" id="om"><div class="ml"><h3>&#128279; 喂入单集播客</h3><div class="fg"><label>单集标题 *</label><input id="ot"></div><div class="fg"><label>链接</label><input id="ol"></div><div class="fg"><label>备注</label><textarea id="od" rows="2"></textarea></div><div class="ma"><button class="bt bou" onclick="hm('om')">取消</button><button class="bt bp" onclick="ao()">加入</button></div></div></div>
 <div class="mb" id="tm"><div class="ml" style="width:600px;"><h3 id="tt">上传逐字稿</h3><div class="fg"><textarea id="ti" class="nt" placeholder="粘贴逐字稿..."></textarea></div><div class="ma"><button class="bt bou" onclick="hm('tm')">取消</button><button class="bt bp" onclick="st()">&#9889; 开始提炼</button></div></div></div>
 
 <script>
-let P=[],E=[],V='dash',CF=null,ST=null,PT={},termDB={},kgEdits={};
+let P=[],E=[],V='dash',CF=null,ST=null,PT={},termDB={},kgEdits={},isAdmin=false,authToken=localStorage.getItem('authToken')||'';
 
-async function api(p,o={}){return(await fetch('/api'+p,{headers:{'Content-Type':'application/json'},...o})).json();}
+async function api(p,o={}){
+  const headers={'Content-Type':'application/json'};
+  if(authToken)headers['X-Auth-Token']=authToken;
+  const r=await fetch('/api'+p,{headers,...o});
+  if(r.status===401){showLoginModal();throw new Error('unauthorized');}
+  return r.json();
+}
 async function ld(){
+  // Check admin status
+  try{
+    const auth=await fetch('/api/auth/check',{headers:authToken?{'X-Auth-Token':authToken}:{}}).then(r=>r.json());
+    isAdmin=auth.isAdmin;
+  }catch(e){isAdmin=false;}
+  updateAuthUI();
   P=await api('/podcasts');E=await api('/episodes');
   const editsArr=await api('/kg/edits');
   kgEdits={};editsArr.forEach(e=>kgEdits[e.term]=e);
   E.sort((a,b)=>(b.pub_date?new Date(b.pub_date):0)-(a.pub_date?new Date(a.pub_date):0));
   buildTermDB();rs();rv();
 }
+function updateAuthUI(){
+  const ab=document.getElementById('authBtn');
+  if(ab)ab.innerHTML=isAdmin?'<span style="color:var(--gn);">&#9679;</span> 管理员 <span style="font-size:9px;cursor:pointer;" onclick="logout()">登出</span>':'<span style="color:var(--gl);">&#9675;</span> 访客模式 <span style="font-size:9px;cursor:pointer;color:var(--o);" onclick="showLoginModal()">登录</span>';
+  document.querySelectorAll('.admin-only').forEach(el=>{el.style.display=isAdmin?'':'none';});
+}
+function showLoginModal(){sm('lm');document.getElementById('lpw').focus();}
+async function doLogin(){
+  const pw=document.getElementById('lpw').value;
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})}).then(r=>r.json());
+    if(r.token){authToken=r.token;localStorage.setItem('authToken',authToken);hm('lm');await ld();}
+    else{document.getElementById('lerr').textContent='密码错误';}
+  }catch(e){document.getElementById('lerr').textContent='登录失败';}
+}
+function logout(){authToken='';localStorage.removeItem('authToken');isAdmin=false;ld();}
 
 // Build term database from all done episodes' Module C
 function buildTermDB(){
@@ -252,7 +288,7 @@ function rv(){
 
 function rDash(el){
   const n=E.filter(e=>e.status==='new'),d=E.filter(e=>e.status==='done'),p=E.filter(e=>e.status==='processing');
-  el.innerHTML=`<div class="ph"><h2>控制台</h2><div class="acs"><button class="bt bou" onclick="rf(this)">&#8635; 刷新</button><button class="bt bp" onclick="showAdd()">+ 添加</button></div></div>
+  el.innerHTML=`<div class="ph"><h2>控制台</h2><div class="acs">${isAdmin?`<button class="bt bou" onclick="rf(this)">&#8635; 刷新</button><button class="bt bp" onclick="showAdd()">+ 添加</button>`:''}</div></div>
     <div class="wf"><div class="ws ${n.length?'act':''}"><span class="wl">新剧集</span><span class="wd">${n.length} 条</span></div><div class="ws ${p.length?'act':''}"><span class="wl">提炼中</span><span class="wd">${p.length} 条</span></div><div class="ws ${d.length?'act':''}"><span class="wl">已完成</span><span class="wd">${d.length} 篇</span></div></div>
     <div class="sr"><div class="sc"><div class="nm" style="color:var(--o)">${P.filter(p=>p.name!=='_散装收藏').length}</div><div class="lb">订阅</div></div><div class="sc"><div class="nm">${E.length}</div><div class="lb">剧集</div></div><div class="sc"><div class="nm" style="color:var(--o)">${n.length}</div><div class="lb">待处理</div></div><div class="sc"><div class="nm" style="color:var(--gn)">${d.length}</div><div class="lb">已提炼</div></div></div>
     ${p.length?`<h3 style="margin-bottom:8px;font-size:12px;">&#9889; 提炼中</h3><div class="el">${p.map(rc).join('')}</div><br>`:''}
@@ -403,8 +439,8 @@ function rKG(el){
             <span style="font-size:13px;font-weight:700;color:var(--bk);">${dn}</span>
             ${t.eng?`<span style="font-size:10px;color:var(--g);">${t.eng}</span>`:''}
             <span style="font-size:9px;color:var(--g);margin-left:auto;">${t.episodes.length}篇</span>
-            <button onclick="kgEdit('${tn}')" style="background:none;border:1px solid var(--gl);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;color:var(--g);">编辑</button>
-            <button onclick="kgDel('${tn}')" style="background:none;border:1px solid var(--gl);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;color:var(--rd);">✕</button>
+            ${isAdmin?`<button onclick="kgEdit('${tn}')" style="background:none;border:1px solid var(--gl);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;color:var(--g);">编辑</button>
+            <button onclick="kgDel('${tn}')" style="background:none;border:1px solid var(--gl);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;color:var(--rd);">✕</button>`:''}
           </div>
           ${noteHtml}
           <div style="font-size:11px;line-height:1.6;color:#555;margin-bottom:6px;">${t.def.substring(0,150)}${t.def.length>150?'...':''}</div>
@@ -496,14 +532,14 @@ function rc(ep){
   const starred=ep.starred?'&#11088;':'&#9734;';
   return`<div class="ec" id="ep-${ep.id}"><div class="et">
     ${ep.podcast_artwork?`<img class="ea" src="${ep.podcast_artwork}">`:`<div class="ea" style="display:flex;align-items:center;justify-content:center;font-size:14px;">&#127911;</div>`}
-    <div class="ei"><div class="etl"><button class="star-btn" onclick="event.stopPropagation();toggleStar(${ep.id})">${starred}</button>${ep.title}</div>
+    <div class="ei"><div class="etl">${isAdmin?`<button class="star-btn" onclick="event.stopPropagation();toggleStar(${ep.id})">${starred}</button>`:(ep.starred?'&#11088; ':'')}${ep.title}</div>
       <div class="em"><span class="pl">${pn}</span>${dt?`<span>${dt}</span>`:''}<span class="st ${sc[ep.status]}">${sl[ep.status]}</span></div>
       ${ep.status==='done'&&ep.notes?`<div class="ed" style="-webkit-line-clamp:3;">${getSummary(ep.notes)}</div>`
       :ep.description?`<div class="ed">${ep.description.replace(/</g,'&lt;')}</div>`:''}${prog}
       <div class="eac">
-        ${ep.status==='new'?`<button class="bt bp bs" onclick="sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="ut(${ep.id})">&#128196; 手动上传</button><button class="bt bou bs" onclick="us(${ep.id},'skipped')">跳过</button>`:''}
-        ${ep.status==='processing'?`<button class="bt brd bs" onclick="ab(${ep.id})">&#9724; 终止</button>`:''}
-        ${ep.status==='skipped'?`<button class="bt bp bs" onclick="sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="ut(${ep.id})">&#128196; 手动上传</button>`:''}
+        ${ep.status==='new'&&isAdmin?`<button class="bt bp bs" onclick="sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="ut(${ep.id})">&#128196; 手动上传</button><button class="bt bou bs" onclick="us(${ep.id},'skipped')">跳过</button>`:''}
+        ${ep.status==='processing'&&isAdmin?`<button class="bt brd bs" onclick="ab(${ep.id})">&#9724; 终止</button>`:''}
+        ${ep.status==='skipped'&&isAdmin?`<button class="bt bp bs" onclick="sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="ut(${ep.id})">&#128196; 手动上传</button>`:''}
         ${ep.status==='done'?`<button class="bt bp bs" onclick="od(${ep.id})">&#128196; 查看笔记</button>`:''}
         ${ep.link?`<a href="${ep.link}" target="_blank" class="bt bou bs" style="text-decoration:none">&#128279;</a>`:''}
       </div></div></div></div>`;
