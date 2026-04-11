@@ -289,8 +289,8 @@ const TAXONOMY={
   "AI 基础理论":{icon:"🧠",color:"#8B5CF6",subs:{"模型架构":{kw:["架构","Transformer","注意力","attention","layer","MoE","encoder","decoder","神经网络","卷积","循环","扩散"]},"训练范式":{kw:["训练","学习","优化","强化学习","预训练","微调","fine-tune","reward","self-play","蒸馏","对齐","RLHF"]},"能力扩展":{kw:["scaling","扩展","涌现","AGI","通用智能","推理时","compute","多模态","上下文"]}}},
   "AI 工程":{icon:"⚙️",color:"#EF4444",subs:{"硬件与算力":{kw:["GPU","芯片","CUDA","Triton","TPU","算力","显存","FP8","FP16","量化","并行","集群"]},"系统与协议":{kw:["框架","部署","推理","协议","MCP","benchmark","pipeline","infra","基础设施","编译器"]}}},
   "AI 应用":{icon:"🤖",color:"#10B981",subs:{"智能体与自动化":{kw:["agent","智能体","自动化","工具调用","任务规划","执行","agentic","编排","workflow"]},"具身智能":{kw:["具身","机器人","视觉","感知","物理","world model","VLA","动作","遥操作","端到端"]}}},
-  "商业与战略":{icon:"🚀",color:"#F59E0B",subs:{"商业模式":{kw:["商业","收入","ARR","飞轮","PMF","SaaS","订阅","变现","规模","网络效应"]},"竞争与资本":{kw:["护城河","壁垒","竞争","融资","估值","IPO","上市","风投","VC"]}}},
-  "经济与金融":{icon:"📈",color:"#3B82F6",subs:{"经济学原理":{kw:["马太效应","长尾","供需","边际","博弈论","外部性","机会成本","沉没成本","规模经济","比较优势","通胀","利率","货币","财富效应"]},"投资与交易":{kw:["期权","量化","对冲","交易","alpha","策略","收益","风险","套利","杠杆"]}}}
+  "商业与战略":{icon:"🚀",color:"#F59E0B",subs:{"商业模式":{kw:["商业","收入","ARR","飞轮","PMF","SaaS","订阅","变现","规模","网络效应","POD","供应链","柔性","DTC","毛利","客单价","LTV","CAC","复购"]},"竞争与资本":{kw:["护城河","壁垒","竞争","融资","估值","IPO","上市","风投","VC","红利","窗口期"]},"运营与增长":{kw:["ROI","NPS","SOP","转化率","留存","DAU","MAU","增长","漏斗","用户","运营","获客","私域","流量"]}}},
+  "经济与金融":{icon:"📈",color:"#3B82F6",subs:{"经济学原理":{kw:["马太效应","长尾","供需","边际","博弈论","外部性","机会成本","沉没成本","规模经济","比较优势","通胀","利率","货币","财富效应","FOMO","羊群","锚定","禀赋效应","损失厌恶"]},"投资与交易":{kw:["期权","量化","对冲","交易","alpha","策略","收益","风险","套利","杠杆"]}}}
 };
 
 // Filter: only established knowledge concepts belong in the graph
@@ -299,20 +299,22 @@ function isKnowledgeTerm(t){
   const def=t.def||'';
   // Blacklist guest-coined / podcast-specific
   if(def.includes('嘉宾定义')||def.includes('嘉宾/受访者定义')||def.includes('受访者定义'))return false;
-  // Blacklist team/product/person/org/book names
-  if(/^(SEED|萤火|Tilang|OpenRouter|豆包|TopLin|ImageNet|通讯作者|金刚经|道德经|连续思维|技术的自我)/.test(t.name))return false;
+  // Blacklist specific non-knowledge items
+  if(/^(SEED|萤火|Tilang|OpenRouter|豆包|TopLin|ImageNet|通讯作者|金刚经|道德经|连续思维|技术的自我|编辑|水线|意外值|脏活累活)/.test(t.name))return false;
   if(t.name.length<2||t.name.length>25)return false;
-  // Blacklist if definition starts with specific org context
+  // Blacklist org-specific definitions
   if(/^(字节|阿里|腾讯|百度|幻方|DeepSeek|华为|北京大学|浙江大学).{0,5}(的|推出|团队|项目|发起)/.test(def))return false;
-  // Must have English equivalent OR match taxonomy keywords
+  // Accept: match taxonomy keywords
   const text=(t.name+' '+(t.eng||'')+' '+def).toLowerCase();
   for(const cat of Object.values(TAXONOMY)){
     for(const sub of Object.values(cat.subs)){
       if(sub.kw.some(k=>text.includes(k.toLowerCase())))return true;
     }
   }
-  // Accept if has recognized English term
-  if(t.eng&&t.eng.length>3&&!/[一-龥]/.test(t.eng))return true;
+  // Accept: has English name (established concept)
+  if(t.eng&&t.eng.length>2)return true;
+  // Accept: short Chinese term with definition containing academic/domain markers
+  if(/概念|理论|效应|原理|定律|法则|模型|方法|术语|经济|心理|社会|哲学|数学/.test(def))return true;
   return false;
 }
 
@@ -469,6 +471,20 @@ async function kgSaveEdit(term){
   await ld();
 }
 
+// Extract summary from notes: use first 2-3 golden quotes as preview
+function getSummary(notes){
+  if(!notes)return '';
+  // Try to get first few quotes from Module A
+  const quotes=[...notes.matchAll(/[""\u201c]([^""\u201d]{15,80})[""\u201d]/g)].map(m=>m[1]);
+  if(quotes.length>=2) return '\u201c'+quotes[0]+'\u201d \u201c'+quotes[1]+'\u201d';
+  // Fallback: get first paragraph after Module B header
+  const match=notes.match(/核心命题[：:]*\s*(.{20,120})/);
+  if(match) return match[1];
+  // Fallback: first meaningful line
+  const lines=notes.split('\n').filter(l=>l.trim().length>20&&!l.startsWith('#')&&!l.startsWith('-'));
+  return lines[0]?.substring(0,120)||'';
+}
+
 function rc(ep){
   const sl={new:'新更新',processing:'提炼中',done:'已提炼',skipped:'已跳过'};
   const sc={new:'tn',processing:'tp',done:'td',skipped:'ts'};
@@ -482,7 +498,8 @@ function rc(ep){
     ${ep.podcast_artwork?`<img class="ea" src="${ep.podcast_artwork}">`:`<div class="ea" style="display:flex;align-items:center;justify-content:center;font-size:14px;">&#127911;</div>`}
     <div class="ei"><div class="etl"><button class="star-btn" onclick="event.stopPropagation();toggleStar(${ep.id})">${starred}</button>${ep.title}</div>
       <div class="em"><span class="pl">${pn}</span>${dt?`<span>${dt}</span>`:''}<span class="st ${sc[ep.status]}">${sl[ep.status]}</span></div>
-      ${ep.description&&ep.status!=='done'?`<div class="ed">${ep.description.replace(/</g,'&lt;')}</div>`:''}${prog}
+      ${ep.status==='done'&&ep.notes?`<div class="ed" style="-webkit-line-clamp:3;">${getSummary(ep.notes)}</div>`
+      :ep.description?`<div class="ed">${ep.description.replace(/</g,'&lt;')}</div>`:''}${prog}
       <div class="eac">
         ${ep.status==='new'?`<button class="bt bp bs" onclick="sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="ut(${ep.id})">&#128196; 手动上传</button><button class="bt bou bs" onclick="us(${ep.id},'skipped')">跳过</button>`:''}
         ${ep.status==='processing'?`<button class="bt brd bs" onclick="ab(${ep.id})">&#9724; 终止</button>`:''}

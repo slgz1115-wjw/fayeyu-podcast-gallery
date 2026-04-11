@@ -2,7 +2,7 @@
  * Podcast processing pipeline:
  *   1. Download audio from RSS enclosure
  *   2. Transcribe via Groq API (chunked) with local fallback
- *   3. Extract notes with Claude Code CLI
+ *   3. Extract notes with DeepSeek API
  */
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -20,104 +20,52 @@ function downloadAudio(url, destPath, onProgress) {
   return new Promise((resolve, reject) => {
     if (!url) return reject(new Error('No audio URL'));
 
-    let attempt = 0;
-    const maxAttempts = 3;
+    function doGet(u, redirects) {
+      if (redirects > 8) return reject(new Error('Too many redirects'));
+      const m = u.startsWith('https') ? https : http;
+      const timer = setTimeout(() => reject(new Error('Download timeout')), 10 * 60 * 1000);
 
-    function doDownload() {
-      attempt++;
-      let settled = false;
-      const settle = (fn, val) => { if (!settled) { settled = true; fn(val); } };
-
-      // 10 minute timeout for the entire download
-      const timer = setTimeout(() => {
-        settle(reject, new Error(`Download timeout after 10 min (attempt ${attempt})`));
-      }, 10 * 60 * 1000);
-
-      function doGet(u, redirects = 0) {
-        if (redirects > 8) return settle(reject, new Error('Too many redirects'));
-        const m = u.startsWith('https') ? https : http;
-        const req = m.get(u, { headers: { 'User-Agent': 'PodcastGallery/1.0' }, timeout: 30000 }, (res) => {
-          if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-            return doGet(res.headers.location, redirects + 1);
-          }
-          if (res.statusCode !== 200) return settle(reject, new Error(`HTTP ${res.statusCode}`));
-
-          const total = parseInt(res.headers['content-length'] || '0');
-          let downloaded = 0;
-          const file = fs.createWriteStream(destPath);
-
-          res.on('data', (chunk) => {
-            downloaded += chunk.length;
-            file.write(chunk);
-            if (total > 0 && onProgress) onProgress(Math.round((downloaded / total) * 100));
-          });
-
-          res.on('end', () => {
-            file.end(() => {
-              clearTimeout(timer);
-              // Verify file is not empty
-              const size = fs.existsSync(destPath) ? fs.statSync(destPath).size : 0;
-              if (size < 1000) {
-                settle(reject, new Error(`Downloaded file too small: ${size} bytes`));
-              } else {
-                settle(resolve, destPath);
-              }
-            });
-          });
-
-          res.on('error', (e) => { clearTimeout(timer); settle(reject, e); });
-          file.on('error', (e) => { clearTimeout(timer); settle(reject, e); });
-        });
-
-        req.on('error', (e) => { clearTimeout(timer); settle(reject, e); });
-        req.on('timeout', () => { req.destroy(); clearTimeout(timer); settle(reject, new Error('Connection timeout')); });
-      }
-
-      doGet(url);
-    }
-
-    // Retry wrapper
-    (async () => {
-      for (let i = 0; i < maxAttempts; i++) {
-        try {
-          const result = await new Promise((res, rej) => { doDownload = () => { /* reset */ }; doDownload(); res; rej; });
-          return resolve(result);
-        } catch (e) {
-          if (i < maxAttempts - 1) {
-            onProgress && onProgress(0);
-          } else {
-            return reject(e);
-          }
+      m.get(u, { headers: { 'User-Agent': 'PodcastGallery/1.0' }, timeout: 30000 }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          return doGet(res.headers.location, redirects + 1);
         }
-      }
-    })();
+        if (res.statusCode !== 200) { clearTimeout(timer); return reject(new Error(`HTTP ${res.statusCode}`)); }
 
-    // Just run the first attempt directly
-    doDownload();
+        const total = parseInt(res.headers['content-length'] || '0');
+        let downloaded = 0;
+        const file = fs.createWriteStream(destPath);
+
+        res.on('data', (chunk) => {
+          downloaded += chunk.length;
+          file.write(chunk);
+          if (total > 0 && onProgress) onProgress(Math.round((downloaded / total) * 100));
+        });
+        res.on('end', () => { file.end(() => { clearTimeout(timer); resolve(destPath); }); });
+        res.on('error', (e) => { clearTimeout(timer); reject(e); });
+        file.on('error', (e) => { clearTimeout(timer); reject(e); });
+      }).on('error', (e) => { clearTimeout(timer); reject(e); });
+    }
+    doGet(url, 0);
   });
 }
 
 // --- Step 2: Transcribe with Python script ---
 function transcribeAudio(audioPath, updateProgress, onProcess) {
   return new Promise((resolve, reject) => {
-    updateProgress({ step: 'transcribing', progress: 35, message: '启动转录引擎...' });
+    updateProgress({ step: 'transcribing', progress: 35, message: 'Groq Whisper 转录中...' });
 
     const scriptPath = path.join(__dirname, 'transcribe.py');
     const txtPath = audioPath.replace(/\.[^.]+$/, '.txt');
-    const proc = spawn('/opt/miniconda3/bin/python3', [scriptPath, audioPath, txtPath], {
+    const proc = spawn(process.env.PYTHON_PATH || '/opt/miniconda3/bin/python3', [scriptPath, audioPath, txtPath], {
       env: {
         ...process.env,
-        PATH: '/opt/miniconda3/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin',
+        PATH: '/opt/miniconda3/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || ''),
         GROQ_API_KEY: process.env.GROQ_API_KEY || '',
       },
-      stdio: ['pipe', 'pipe', 'pipe'],
-      // No timeout — long podcasts can take a while with Groq chunking
     });
     if (onProcess) onProcess(proc);
 
-    let stdout = '';
-    let stderr = '';
-
+    let stdout = '', stderr = '';
     proc.stdout.on('data', d => {
       const lines = d.toString().split('\n');
       for (const line of lines) {
@@ -125,41 +73,33 @@ function transcribeAudio(audioPath, updateProgress, onProcess) {
         try {
           const msg = JSON.parse(line);
           if (msg.message) {
-            const prog = msg.progress != null ? msg.progress : null;
-            const mappedProg = prog != null ? 35 + Math.round(prog * 0.35) : 50;
-            updateProgress({ step: 'transcribing', progress: mappedProg, message: msg.message });
+            const prog = msg.progress != null ? 35 + Math.round(msg.progress * 0.35) : 50;
+            updateProgress({ step: 'transcribing', progress: prog, message: msg.message });
           }
         } catch(e) {}
       }
     });
-
     proc.stderr.on('data', d => { stderr += d.toString(); });
-
     proc.on('close', code => {
       if (code === 0) {
         const match = stdout.match(/===TRANSCRIPT_START===\n([\s\S]*?)===TRANSCRIPT_END===/);
-        if (match && match[1].trim().length > 100) {
-          resolve(match[1].trim());
-        } else if (fs.existsSync(txtPath) && fs.statSync(txtPath).size > 100) {
-          resolve(fs.readFileSync(txtPath, 'utf-8'));
-        } else {
-          reject(new Error('Transcript output empty or not found'));
-        }
+        if (match && match[1].trim().length > 100) resolve(match[1].trim());
+        else if (fs.existsSync(txtPath) && fs.statSync(txtPath).size > 100) resolve(fs.readFileSync(txtPath, 'utf-8'));
+        else reject(new Error('Transcript output empty'));
       } else {
         reject(new Error(`Transcribe failed (code ${code}): ${stderr.slice(-500)}`));
       }
     });
-
     proc.on('error', reject);
   });
 }
 
-// --- Step 3: Extract notes with Claude CLI ---
-function extractNotes(transcript, podcastName, episodeTitle, onProcess) {
+// --- Step 3: Extract notes with DeepSeek API ---
+function extractNotes(transcript, podcastName, episodeTitle) {
   return new Promise((resolve, reject) => {
     const maxLen = 500000;
     const truncated = transcript.length > maxLen
-      ? transcript.substring(0, maxLen) + '\n\n[...逐字稿已截断...]'
+      ? transcript.substring(0, maxLen) + '\n\n[...truncated...]'
       : transcript;
 
     const prompt = `你是一个播客内容提炼专家。请根据以下播客逐字稿，严格按照三个模块输出结构化笔记。
@@ -188,68 +128,79 @@ function extractNotes(transcript, podcastName, episodeTitle, onProcess) {
 
 ---
 
-以下��逐字稿全文：
+以下是逐字稿全文：
 
 ${truncated}`;
 
-    const claudePath = '/Users/slgz1115/.deskclaw/node/bin/claude';
-    const child = spawn(claudePath, ['-p', '--no-session-persistence'], {
-      env: { ...process.env, PATH: process.env.PATH + ':/Users/slgz1115/.deskclaw/node/bin' },
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    if (onProcess) onProcess(child);
+    const apiKey = process.env.DEEPSEEK_API_KEY || '';
+    if (!apiKey) return reject(new Error('DEEPSEEK_API_KEY not set'));
 
-    let stdout = '', stderr = '';
-    child.stdout.on('data', d => { stdout += d.toString(); });
-    child.stderr.on('data', d => { stderr += d.toString(); });
-
-    child.on('close', code => {
-      if (code === 0 && stdout.trim().length > 200) {
-        resolve(stdout.trim());
-      } else {
-        reject(new Error(`Claude failed (code ${code}): ${stderr.slice(-500) || 'empty output'}`));
-      }
+    const body = JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 8000,
+      temperature: 0.3,
     });
 
-    child.on('error', reject);
-    child.stdin.write(prompt);
-    child.stdin.end();
+    const req = https.request({
+      hostname: 'api.deepseek.com',
+      path: '/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Length': Buffer.byteLength(body),
+      },
+      timeout: 300000,
+    }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const content = json.choices?.[0]?.message?.content;
+          if (content && content.length > 200) resolve(content);
+          else reject(new Error(`DeepSeek empty response: ${data.slice(0, 300)}`));
+        } catch (e) {
+          reject(new Error(`DeepSeek parse error: ${e.message}, body: ${data.slice(0, 300)}`));
+        }
+      });
+    });
+
+    req.on('error', e => reject(new Error(`DeepSeek request error: ${e.message}`)));
+    req.on('timeout', () => { req.destroy(); reject(new Error('DeepSeek timeout (5min)')); });
+    req.write(body);
+    req.end();
   });
 }
 
 // --- Full pipeline ---
 async function runPipeline(episode, audioUrl, updateProgress, onProcess) {
-  const epId = episode.id;
-  const audioPath = path.join(AUDIO_DIR, `ep_${epId}.mp3`);
+  const audioPath = path.join(AUDIO_DIR, `ep_${episode.id}.mp3`);
 
   try {
-    // Step 1: Download (skip if already downloaded)
+    // Step 1: Download
     if (fs.existsSync(audioPath) && fs.statSync(audioPath).size > 10000) {
-      updateProgress({ step: 'downloading', progress: 30, message: '音频已缓存，跳过下载' });
+      updateProgress({ step: 'downloading', progress: 30, message: '音频已缓存' });
     } else {
       updateProgress({ step: 'downloading', progress: 5, message: '下载音频中...' });
       await downloadAudio(audioUrl, audioPath, (pct) => {
         updateProgress({ step: 'downloading', progress: 5 + Math.round(pct * 0.25), message: `下载音频... ${pct}%` });
       });
     }
-    updateProgress({ step: 'downloading', progress: 30, message: '音频就绪' });
 
     // Step 2: Transcribe
     const transcript = await transcribeAudio(audioPath, updateProgress, onProcess);
-    updateProgress({ step: 'transcribing', progress: 70, message: '转录完成，开始提炼...' });
+    updateProgress({ step: 'transcribing', progress: 70, message: '转录完成' });
 
     // Step 3: Extract notes
-    updateProgress({ step: 'extracting', progress: 75, message: 'Claude 正在按 Skill 提炼三模块笔记...' });
-    const notes = await extractNotes(transcript, episode.podcast_name, episode.title, onProcess);
+    updateProgress({ step: 'extracting', progress: 75, message: 'DeepSeek 提炼三模块笔记...' });
+    const notes = await extractNotes(transcript, episode.podcast_name, episode.title);
     updateProgress({ step: 'saving', progress: 95, message: '保存笔记...' });
 
-    // Cleanup audio (keep transcript)
     try { fs.unlinkSync(audioPath); } catch(e) {}
-
     return { transcript, notes };
-
   } catch (err) {
-    // Don't delete audio on failure so retry doesn't re-download
     throw err;
   }
 }
