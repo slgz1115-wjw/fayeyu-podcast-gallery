@@ -585,10 +585,10 @@ function rLibrary(el){
   const pendN=notes.filter(n=>n.status==='new'||n.status==='processing');
 
   const doneE=E.filter(e=>e.status==='done').map(e=>({kind:'ep',type:'podcast',id:e.id,title:e.title,source:e.podcast_name,date:e.pub_date,content:e.notes,starred:e.starred,artwork:e.podcast_artwork,_raw:e}));
-  const doneN=notes.filter(n=>n.status==='done').map(n=>({kind:'note',type:n.source_type||'note',id:n.id,title:n.title,source:n.source_type,date:n.created_at,content:n.content,starred:n.starred,_raw:n}));
+  const doneN=notes.filter(n=>n.status==='done'&&n.source_type!=='glimpse').map(n=>({kind:'note',type:n.source_type||'note',id:n.id,title:n.title,source:n.source_type,date:n.created_at,content:n.content,starred:n.starred,_raw:n}));
   let allDone=[...doneE,...doneN].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
 
-  const counts={all:allDone.length,podcast:doneE.length,lark:doneN.filter(x=>x.type==='lark').length,note:doneN.filter(x=>x.type==='note').length,glimpse:doneN.filter(x=>x.type==='glimpse').length,starred:allDone.filter(x=>x.starred).length};
+  const counts={all:allDone.length,podcast:doneE.length,lark:doneN.filter(x=>x.type==='lark').length,note:doneN.filter(x=>x.type==='note').length,starred:allDone.filter(x=>x.starred).length};
 
   let html=`<div class="ph"><h2>Library</h2><span class="sub">${counts.all} pieces</span></div>
     <div class="fb">
@@ -596,7 +596,6 @@ function rLibrary(el){
       <span class="fc ${tf==='podcast'?'act':''}" onclick="ST='podcast';rv()">&#127911; 播客 · ${counts.podcast}</span>
       <span class="fc ${tf==='lark'?'act':''}" onclick="ST='lark';rv()">&#128214; 飞书 · ${counts.lark}</span>
       <span class="fc ${tf==='note'?'act':''}" onclick="ST='note';rv()">&#9997; 笔记 · ${counts.note}</span>
-      <span class="fc ${tf==='glimpse'?'act':''}" onclick="ST='glimpse';rv()">&#10024; 惊鸿一瞥 · ${counts.glimpse}</span>
       <span class="fc ${tf==='starred'?'act':''}" onclick="ST='starred';rv()">&#11088; 收藏 · ${counts.starred}</span>
     </div>`;
 
