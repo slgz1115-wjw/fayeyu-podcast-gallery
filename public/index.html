@@ -497,6 +497,38 @@ function rLibrary(el){
     html+=`<div class="pending-block"><h3>&#9889; 处理中 / 待处理 · ${pendE.length+pendN.length}</h3><div class="el">${pendE.map(rc).join('')}${pendN.map(rnItem).join('')}</div></div>`;
   }
 
+  // === Podcast sub-view: full subscription library (all episodes, any status) ===
+  if(tf==='podcast'){
+    const subs=P.filter(p=>p.name!=='_散装收藏');
+    let f=E;
+    if(CF)f=f.filter(e=>e.podcast_id===CF);
+    const sf=window._pf||null;
+    const sCounts={all:f.length,new:f.filter(e=>e.status==='new').length,processing:f.filter(e=>e.status==='processing').length,done:f.filter(e=>e.status==='done').length,skipped:f.filter(e=>e.status==='skipped').length};
+
+    html+=`<div style="margin-bottom:18px;">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;">订阅 · 点击筛选</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="sub-chip ${!CF?'act':''}" onclick="CF=null;rv()">全部 · ${E.length}</div>
+        ${subs.map(p=>`<div class="sub-chip ${CF===p.id?'act':''}" onclick="CF=${p.id};rv()">
+          ${p.artwork?`<img src="${p.artwork}">`:'<span style="width:24px;text-align:center;">🎙</span>'}
+          ${p.name}${p.new_count>0?` <span class="nbadge">${p.new_count}</span>`:''}
+          ${isAdmin?`<button class="x" onclick="event.stopPropagation();dp(${p.id},'${p.name.replace(/'/g,"\\'")}')">✕</button>`:''}
+        </div>`).join('')}
+        ${isAdmin?`<div class="sub-chip add" onclick="openSrc('podcast')">+ 添加订阅</div>`:''}
+      </div>
+    </div>
+    <div class="fb" style="margin-top:6px;">
+      ${['all','new','processing','done','skipped'].map(k=>{const l={all:'全部',new:'待处理',processing:'提炼中',done:'已提炼',skipped:'已跳过'};return`<span class="fc ${(k==='all'&&!sf)||sf===k?'act':''}" onclick="window._pf=${k==='all'?'null':`'${k}'`};rv()">${l[k]} · ${sCounts[k]}</span>`;}).join('')}
+    </div>`;
+
+    const filtered=sf?f.filter(e=>e.status===sf):f;
+    html+=`<div class="el">${filtered.length?filtered.map(rc).join(''):'<div class="emp"><div class="ic">&#127911;</div><h3>暂无剧集</h3></div>'}</div>`;
+    el.innerHTML=html;
+    filtered.filter(e=>e.status==='processing').forEach(e=>poll(e.id));
+    return;
+  }
+
+  // === Default / other filters: unified done list ===
   let filtered=allDone;
   if(tf==='starred')filtered=allDone.filter(x=>x.starred);
   else if(tf)filtered=allDone.filter(x=>x.type===tf);
