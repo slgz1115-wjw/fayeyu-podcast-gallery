@@ -3,255 +3,384 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Murmur · 低语</title>
+<title>murmur · 低语</title>
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.9.0/mammoth.browser.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
-:root{--o:#FF6A00;--ol:#FF8C33;--op:#FFF3E8;--bk:#1A1A1A;--dk:#2D2D2D;--g:#888;--gl:#CCC;--bg:#FAFAFA;--w:#FFF;--gn:#22C55E;--rd:#EF4444;--bl:#3B82F6;--p:#8B5CF6;--pl:#A78BFA;}
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#0d0d0d;
+  --bg2:#131313;
+  --bg3:#1a1a1a;
+  --line:rgba(255,255,255,0.08);
+  --line2:rgba(255,255,255,0.12);
+  --ink:#f5f0eb;
+  --ink2:rgba(245,240,235,0.72);
+  --ink3:rgba(245,240,235,0.42);
+  --ink4:rgba(245,240,235,0.22);
+  --o:#FF6A00;
+  --ol:#FF8C33;
+  --op:rgba(255,106,0,0.12);
+  --p:#A78BFA;
+  --pl:rgba(167,139,250,0.15);
+  --gn:#4ADE80;
+  --rd:#F87171;
+  --yl:#FBBF24;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--bk);min-height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;}
-.app{display:grid;grid-template-columns:260px 1fr;height:100vh;}
+html,body{background:var(--bg);color:var(--ink);font-family:'Inter','Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;}
+body{position:relative;overflow-x:hidden;}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 900px 520px at 50% -10%,rgba(255,106,0,0.13),transparent 60%),
+             radial-gradient(ellipse 600px 400px at 85% 20%,rgba(167,139,250,0.06),transparent 55%);
+}
+.page{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 32px 120px;}
 
-/* Sidebar */
-.sb{background:linear-gradient(180deg,#1a1a1a 0%,#151515 100%);color:var(--w);display:flex;flex-direction:column;overflow:hidden;border-right:1px solid rgba(255,255,255,0.05);}
-.sb-h{padding:26px 22px 20px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;}
-.sb-h::after{content:'';position:absolute;left:22px;right:22px;bottom:0;height:1px;background:linear-gradient(90deg,rgba(255,106,0,0.3),transparent);}
-.sb-h .brand{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
-.sb-h .brand img{width:36px;height:36px;border-radius:10px;box-shadow:0 2px 12px rgba(255,106,0,0.15);}
-.sb-h h1{font-size:20px;font-weight:800;color:var(--o);letter-spacing:-0.5px;font-family:Georgia,serif;font-style:italic;}
-.sb-h .subtitle{font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;letter-spacing:2px;font-weight:300;}
-.sb-nav{padding:14px 10px;}
-.ni{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:500;color:rgba(255,255,255,0.55);transition:all 0.2s;margin-bottom:3px;letter-spacing:0.2px;}
-.ni:hover{background:rgba(255,255,255,0.05);color:var(--w);}
-.ni.act{background:linear-gradient(90deg,rgba(255,106,0,0.18),rgba(255,106,0,0.05));color:var(--o);box-shadow:inset 2px 0 0 var(--o);}
-.ni .ic{font-size:15px;width:20px;text-align:center;}
-.ni .bdg{margin-left:auto;background:var(--o);color:white;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
-.sb-sec{padding:4px 10px;flex:1;overflow-y:auto;}
-.sb-sec h3{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.25);padding:12px 14px 6px;font-weight:600;}
-.pi{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.55);transition:all 0.15s;position:relative;margin-bottom:2px;}
-.pi:hover{background:rgba(255,255,255,0.05);color:var(--w);}
-.pi.act{color:var(--o);background:rgba(255,106,0,0.08);}
-.pa{width:24px;height:24px;border-radius:5px;object-fit:cover;flex-shrink:0;background:var(--dk);}
-.pn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.nb{font-size:10px;color:var(--o);font-weight:700;background:rgba(255,106,0,0.12);padding:1px 7px;border-radius:8px;}
-.db{display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--rd);color:white;border:none;border-radius:4px;font-size:9px;padding:2px 5px;cursor:pointer;}
-.pi:hover .db{display:block;}
-.sb-bt{padding:14px 18px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.4);}
+/* ===== HERO ===== */
+.hero{padding:88px 0 48px;text-align:center;position:relative;}
+.hero .logo{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:116px;font-weight:300;font-style:italic;
+  letter-spacing:-2px;line-height:0.9;
+  background:linear-gradient(180deg,#fff 0%,#f5f0eb 40%,#c9b89a 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 60px rgba(255,106,0,0.08);
+  margin-bottom:14px;
+}
+.hero .tagline{
+  font-size:12px;letter-spacing:5px;text-transform:uppercase;
+  color:var(--ink3);font-weight:300;margin-bottom:40px;
+}
+.hero .tagline b{color:var(--o);font-weight:400;font-style:italic;text-transform:none;letter-spacing:1px;font-family:'Cormorant Garamond',serif;font-size:15px;margin-right:8px;}
+.pills{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+.pill{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:13px 22px;border-radius:100px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--line2);
+  color:var(--ink);font-size:13px;font-weight:500;font-family:inherit;
+  cursor:pointer;transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
+  backdrop-filter:blur(8px);
+}
+.pill:hover{
+  background:rgba(255,255,255,0.06);
+  border-color:var(--o);
+  transform:translateY(-2px);
+  box-shadow:0 10px 30px rgba(255,106,0,0.12);
+}
+.pill .pill-ic{font-size:15px;}
+.pill .pill-ct{
+  margin-left:4px;font-size:10px;font-weight:700;
+  background:var(--o);color:#fff;padding:2px 7px;border-radius:8px;min-width:18px;text-align:center;
+}
+.pill.pill-lark:hover{border-color:var(--p);box-shadow:0 10px 30px rgba(167,139,250,0.15);}
 
-/* Main */
-.mn{padding:32px 40px;overflow-y:auto;position:relative;background:linear-gradient(180deg,#fafafa 0%,#f5f5f5 100%);}
-.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(0,0,0,0.05);}
-.ph h2{font-size:22px;font-weight:800;letter-spacing:-0.5px;}
-.ph .sub{font-size:12px;color:var(--g);margin-left:12px;font-weight:400;}
-.acs{display:flex;gap:8px;}
-.bt{padding:7px 16px;border:none;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;transition:all 0.2s;font-weight:500;}
-.bp{background:var(--o);color:white;box-shadow:0 2px 8px rgba(255,106,0,0.2);}.bp:hover{background:var(--ol);box-shadow:0 3px 12px rgba(255,106,0,0.3);}
-.bou{background:var(--w);border:1px solid var(--gl);color:var(--bk);}.bou:hover{border-color:var(--o);color:var(--o);}
-.bs{padding:4px 11px;font-size:11px;}
-.brd{background:var(--rd);color:white;}
+/* ===== TABS ===== */
+.tabs{
+  display:flex;gap:6px;justify-content:center;
+  padding:20px 0 4px;margin-top:8px;
+  border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:50;
+  background:rgba(13,13,13,0.85);backdrop-filter:blur(12px);
+}
+.tab{
+  padding:12px 22px;background:none;border:none;
+  color:var(--ink3);font-family:'Cormorant Garamond',serif;
+  font-size:19px;font-weight:400;font-style:italic;letter-spacing:0.5px;
+  cursor:pointer;transition:all 0.2s;position:relative;
+}
+.tab:hover{color:var(--ink);}
+.tab.act{color:var(--o);}
+.tab.act::after{
+  content:'';position:absolute;left:22px;right:22px;bottom:-1px;height:2px;
+  background:linear-gradient(90deg,transparent,var(--o),transparent);
+}
+.auth-slot{position:absolute;right:32px;top:28px;font-size:11px;color:var(--ink3);z-index:60;}
+.auth-slot a{color:var(--o);cursor:pointer;margin-left:6px;}
+.auth-slot .dot{color:var(--gn);margin-right:4px;}
 
-/* Stats */
-.sr{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
-.sc{background:var(--w);border-radius:12px;padding:20px 18px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02);text-align:center;border:1px solid rgba(0,0,0,0.03);transition:all 0.2s;}
-.sc:hover{box-shadow:0 4px 16px rgba(0,0,0,0.06);transform:translateY(-1px);}
-.sc .nm{font-size:28px;font-weight:800;letter-spacing:-1px;font-family:Georgia,serif;}
-.sc .lb{font-size:10px;color:var(--g);margin-top:4px;letter-spacing:1px;text-transform:uppercase;}
+/* ===== CONTENT ===== */
+.content{padding:32px 0 40px;}
+.ph{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;}
+.ph h2{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:400;font-style:italic;letter-spacing:-0.5px;color:var(--ink);}
+.ph .sub{font-size:11px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase;}
+.ph .acs{margin-left:auto;display:flex;gap:8px;}
 
-/* Inbox add buttons grid */
-.inbox-add{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
-.add-btn{background:var(--w);border:1px solid rgba(0,0,0,0.05);border-radius:14px;padding:24px 16px;text-align:center;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;}
-.add-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,106,0,0.04));opacity:0;transition:opacity 0.25s;}
-.add-btn:hover{border-color:var(--o);transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,106,0,0.08);}
-.add-btn:hover::before{opacity:1;}
-.add-btn .add-icon{font-size:28px;margin-bottom:10px;position:relative;}
-.add-btn .add-label{font-size:13px;font-weight:600;color:var(--bk);position:relative;}
-.add-btn .add-desc{font-size:10px;color:var(--g);margin-top:4px;position:relative;}
+/* Buttons */
+.bt{padding:8px 16px;border:none;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer;transition:all 0.2s;font-weight:500;}
+.bp{background:var(--o);color:#fff;box-shadow:0 2px 12px rgba(255,106,0,0.25);}
+.bp:hover{background:var(--ol);transform:translateY(-1px);}
+.bou{background:transparent;border:1px solid var(--line2);color:var(--ink2);}
+.bou:hover{border-color:var(--o);color:var(--o);}
+.bs{padding:5px 12px;font-size:11px;}
+.brd{background:transparent;border:1px solid rgba(248,113,113,0.4);color:var(--rd);}
+.brd:hover{background:rgba(248,113,113,0.1);}
 
-/* Episode cards */
-.el{display:flex;flex-direction:column;gap:10px;}
-.ec{background:var(--w);border-radius:12px;padding:18px 22px;box-shadow:0 1px 3px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04);transition:all 0.2s;}
-.ec:hover{box-shadow:0 6px 20px rgba(0,0,0,0.06);transform:translateX(2px);border-color:rgba(255,106,0,0.15);}
-.et{display:flex;align-items:flex-start;gap:14px;}
-.ea{width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+/* Filter chips */
+.fb{display:flex;gap:7px;margin-bottom:22px;flex-wrap:wrap;}
+.fc{
+  padding:7px 16px;border-radius:100px;
+  font-size:11px;font-weight:500;
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--line);
+  color:var(--ink2);cursor:pointer;transition:all 0.15s;font-family:inherit;
+}
+.fc:hover{border-color:var(--line2);color:var(--ink);}
+.fc.act{background:var(--ink);color:var(--bg);border-color:var(--ink);}
+
+/* Library cards */
+.el{display:flex;flex-direction:column;gap:12px;}
+.ec{
+  background:linear-gradient(135deg,var(--bg2),var(--bg3));
+  border:1px solid var(--line);
+  border-radius:14px;padding:20px 24px;position:relative;
+  transition:all 0.25s;cursor:pointer;overflow:hidden;
+}
+.ec::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--ink4);transition:background 0.2s;
+}
+.ec.type-podcast::before{background:var(--o);}
+.ec.type-lark::before,.ec.type-transcript::before{background:var(--p);}
+.ec.type-note::before{background:var(--ink4);}
+.ec:hover{
+  border-color:var(--line2);
+  transform:translateY(-2px);
+  box-shadow:0 12px 40px rgba(0,0,0,0.4);
+}
+.et{display:flex;align-items:flex-start;gap:16px;}
+.ea{
+  width:46px;height:46px;border-radius:10px;flex-shrink:0;
+  background:var(--bg3);display:flex;align-items:center;justify-content:center;
+  font-size:18px;overflow:hidden;
+}
+.ea img{width:100%;height:100%;object-fit:cover;}
 .ei{flex:1;min-width:0;}
-.etl{font-size:14.5px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px;letter-spacing:-0.2px;}
-.star-btn{background:none;border:none;cursor:pointer;font-size:15px;padding:0;line-height:1;transition:transform 0.2s;color:#ccc;}
-.star-btn:hover{transform:scale(1.3);color:var(--o);}
-.star-btn.on{color:var(--o);}
-.em{font-size:11px;color:var(--g);display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.etl{font-size:15px;font-weight:600;margin-bottom:6px;color:var(--ink);letter-spacing:-0.2px;display:flex;align-items:center;gap:8px;}
+.star-btn{background:none;border:none;cursor:pointer;font-size:14px;padding:0;line-height:1;transition:transform 0.2s;color:var(--ink4);}
+.star-btn:hover{transform:scale(1.3);color:var(--yl);}
+.star-btn.on{color:var(--yl);}
+.em{font-size:10px;color:var(--ink3);display:flex;gap:10px;align-items:center;flex-wrap:wrap;letter-spacing:0.3px;}
+.src-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:10px;font-weight:500;background:rgba(255,255,255,0.04);border:1px solid var(--line);}
+.src-chip.podcast{color:var(--o);border-color:rgba(255,106,0,0.25);}
+.src-chip.lark,.src-chip.transcript{color:var(--p);border-color:rgba(167,139,250,0.25);}
+.ed{font-size:12.5px;color:var(--ink2);margin-top:10px;line-height:1.75;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.eac{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;align-items:center;}
+.st{display:inline-block;padding:3px 10px;border-radius:100px;font-size:10px;font-weight:500;letter-spacing:0.3px;}
+.tn{background:var(--op);color:var(--o);}
+.tp{background:rgba(251,191,36,0.12);color:var(--yl);}
+.td{background:rgba(74,222,128,0.1);color:var(--gn);}
+.ts{background:rgba(255,255,255,0.05);color:var(--ink3);}
 .pl{color:var(--o);font-weight:500;}
-.ed{font-size:12px;color:#555;margin-top:8px;line-height:1.7;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.eac{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;align-items:center;}
-.st{display:inline-block;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:500;}
-.tn{background:var(--op);color:var(--o);}.tp{background:#FEF3C7;color:#D97706;}.td{background:#F0FDF4;color:var(--gn);}.ts{background:#F5F5F5;color:var(--g);}
-.src-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:5px;font-size:10px;font-weight:500;background:rgba(139,92,246,0.1);color:var(--p);}
-.pb{margin-top:7px;background:#F3F4F6;border-radius:5px;height:5px;overflow:hidden;}
-.pf{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--o),var(--ol));transition:width 0.5s;}
-.pt{font-size:9px;color:var(--o);margin-top:2px;display:flex;align-items:center;gap:4px;}
+.pb{margin-top:10px;background:rgba(255,255,255,0.05);border-radius:6px;height:5px;overflow:hidden;}
+.pf{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--o),var(--ol));transition:width 0.5s;}
+.pt{font-size:10px;color:var(--o);margin-top:4px;display:flex;align-items:center;gap:6px;}
 .sp{display:inline-block;width:9px;height:9px;border:2px solid var(--op);border-top-color:var(--o);border-radius:50%;animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-/* Drawer */
-.dov{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;opacity:0;pointer-events:none;transition:opacity 0.25s;}
+/* Pending queue compact */
+.pending-block{margin-bottom:26px;padding:18px 22px;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px;}
+.pending-block h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:14px;font-weight:500;}
+.pending-block .el{gap:8px;}
+.pending-block .ec{padding:14px 18px;}
+
+/* Empty */
+.emp{text-align:center;padding:80px 24px;color:var(--ink3);}
+.emp .ic{font-size:40px;margin-bottom:14px;opacity:0.5;}
+.emp h3{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;font-weight:400;color:var(--ink2);margin-bottom:6px;}
+.emp p{font-size:12px;}
+
+/* ===== DRAWERS ===== */
+.dov{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:200;opacity:0;pointer-events:none;transition:opacity 0.3s;}
 .dov.open{opacity:1;pointer-events:auto;}
-.drw{position:fixed;top:0;right:-58vw;width:56vw;height:100vh;background:var(--w);z-index:201;box-shadow:-4px 0 20px rgba(0,0,0,0.1);transition:right 0.3s ease;display:flex;flex-direction:column;}
+.drw{
+  position:fixed;top:0;right:-620px;width:600px;max-width:92vw;height:100vh;
+  background:var(--bg2);border-left:1px solid var(--line);
+  z-index:201;box-shadow:-20px 0 60px rgba(0,0,0,0.5);
+  transition:right 0.35s cubic-bezier(0.4,0,0.2,1);
+  display:flex;flex-direction:column;
+}
 .drw.open{right:0;}
-.dh{padding:16px 24px;border-bottom:1px solid rgba(0,0,0,0.05);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.dh h3{font-size:15px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px;}
-.dc{background:none;border:none;font-size:18px;cursor:pointer;color:var(--g);padding:2px 6px;border-radius:5px;}.dc:hover{background:var(--bg);}
-.dbody{flex:1;overflow-y:auto;padding:24px 28px;}
-.dactions{padding:14px 28px;border-top:1px solid rgba(0,0,0,0.05);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;}
+.dh{padding:22px 28px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.dh h3{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;font-weight:400;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px;color:var(--ink);}
+.dc{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3);padding:4px 10px;border-radius:6px;line-height:1;}
+.dc:hover{color:var(--ink);background:rgba(255,255,255,0.05);}
+.dbody{flex:1;overflow-y:auto;padding:26px 32px;}
+.dactions{padding:14px 28px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;background:var(--bg);}
 
-.dbody h1{font-size:20px;font-weight:700;margin:20px 0 10px;}
-.dbody h2{font-size:17px;font-weight:700;margin:24px 0 10px;color:var(--o);border-bottom:2px solid var(--op);padding-bottom:6px;}
-.dbody h3{font-size:14px;font-weight:600;margin:16px 0 6px;color:var(--dk);}
-.dbody p{font-size:13px;line-height:1.85;margin-bottom:10px;color:#333;}
-.dbody ul,.dbody ol{padding-left:18px;margin-bottom:10px;}
-.dbody li{font-size:13px;line-height:1.75;margin-bottom:3px;}
-.dbody blockquote{border-left:3px solid var(--o);padding:10px 14px;margin:10px 0;background:var(--op);border-radius:0 7px 7px 0;font-size:13px;line-height:1.75;color:#444;}
-.dbody strong{color:var(--bk);}
-.dbody hr{border:none;border-top:1px solid #eee;margin:20px 0;}
-.dbody code{background:#f5f5f5;padding:1px 5px;border-radius:3px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--p);}
+/* Markdown in drawer */
+.dbody h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;font-style:italic;margin:22px 0 12px;color:var(--ink);}
+.dbody h2{font-size:17px;font-weight:600;margin:26px 0 10px;color:var(--o);border-bottom:1px solid var(--op);padding-bottom:8px;letter-spacing:0.2px;}
+.dbody h3{font-size:14px;font-weight:600;margin:18px 0 8px;color:var(--ink);}
+.dbody p{font-size:14px;line-height:1.9;margin-bottom:12px;color:var(--ink2);}
+.dbody ul,.dbody ol{padding-left:20px;margin-bottom:12px;}
+.dbody li{font-size:14px;line-height:1.85;margin-bottom:4px;color:var(--ink2);}
+.dbody blockquote{border-left:2px solid var(--o);padding:10px 16px;margin:12px 0;background:rgba(255,106,0,0.05);border-radius:0 8px 8px 0;font-size:13px;line-height:1.8;color:var(--ink2);font-style:italic;}
+.dbody strong{color:var(--ink);font-weight:600;}
+.dbody hr{border:none;border-top:1px solid var(--line);margin:24px 0;}
+.dbody code{background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--p);}
+.dbody a{color:var(--o);}
 
-.term-hl{background:linear-gradient(to bottom,transparent 60%,rgba(139,92,246,0.15) 60%);cursor:pointer;font-weight:500;position:relative;border-bottom:1px dashed var(--p);}
-.term-pop{position:fixed;z-index:300;background:var(--w);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,0.12);max-width:360px;min-width:260px;display:none;}
+.term-hl{background:linear-gradient(to bottom,transparent 62%,rgba(167,139,250,0.22) 62%);cursor:pointer;font-weight:500;border-bottom:1px dashed rgba(167,139,250,0.5);color:var(--ink);}
+.term-pop{position:fixed;z-index:300;background:var(--bg3);border:1px solid rgba(167,139,250,0.3);border-radius:12px;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,0.6);max-width:360px;min-width:260px;display:none;}
 .term-pop.visible{display:block;}
 .term-pop .tp-name{font-size:14px;font-weight:700;color:var(--p);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
-.term-pop .tp-name .tp-tag{font-size:9px;background:rgba(139,92,246,0.1);color:var(--p);padding:1px 6px;border-radius:4px;}
-.term-pop .tp-def{font-size:12px;line-height:1.7;color:#444;}
-.term-pop .tp-refs{margin-top:8px;border-top:1px solid #eee;padding-top:8px;}
-.term-pop .tp-ref{font-size:10px;color:var(--g);padding:2px 0;cursor:pointer;}.tp-ref:hover{color:var(--o);}
+.term-pop .tp-name .tp-tag{font-size:9px;background:var(--pl);color:var(--p);padding:1px 6px;border-radius:4px;font-weight:500;}
+.term-pop .tp-def{font-size:12px;line-height:1.7;color:var(--ink2);}
+.term-pop .tp-refs{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;}
+.term-pop .tp-ref{font-size:10px;color:var(--ink3);padding:3px 0;cursor:pointer;}
+.term-pop .tp-ref:hover{color:var(--o);}
 
-.backlinks{margin-top:28px;padding-top:20px;border-top:2px solid var(--bg);}
-.backlinks h3{font-size:13px;font-weight:600;color:var(--p);margin-bottom:10px;}
-.bl-item{padding:8px 12px;background:var(--bg);border-radius:7px;margin-bottom:6px;border-left:3px solid var(--p);cursor:pointer;transition:all 0.15s;}
-.bl-item:hover{background:rgba(139,92,246,0.08);}
+.backlinks{margin-top:32px;padding-top:22px;border-top:1px solid var(--line);}
+.backlinks h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--p);margin-bottom:12px;font-weight:600;font-family:'Inter',sans-serif;font-style:normal;}
+.bl-item{padding:10px 14px;background:rgba(167,139,250,0.05);border-radius:8px;margin-bottom:7px;border-left:2px solid var(--p);cursor:pointer;transition:all 0.15s;}
+.bl-item:hover{background:rgba(167,139,250,0.1);}
 .bl-item .bl-term{font-size:12px;font-weight:600;color:var(--p);}
-.bl-item .bl-def{font-size:11px;color:var(--g);margin-top:2px;}
+.bl-item .bl-def{font-size:11px;color:var(--ink3);margin-top:2px;}
 
-/* Knowledge Graph */
-.kn{background:var(--w);border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.04);border:2px solid transparent;transition:all 0.2s;}
-.kn:hover{border-color:var(--p);box-shadow:0 4px 16px rgba(139,92,246,0.08);}
+/* Source drawer content */
+.src-section{margin-bottom:26px;}
+.src-section h4{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;font-weight:500;}
+.src-input{
+  width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);
+  border:1px solid var(--line2);border-radius:10px;color:var(--ink);
+  font-family:inherit;font-size:13px;transition:all 0.2s;
+}
+.src-input:focus{outline:none;border-color:var(--o);background:rgba(255,255,255,0.06);}
+.src-textarea{min-height:220px;resize:vertical;line-height:1.7;font-family:'JetBrains Mono',monospace;font-size:12px;}
+
+.sub-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 7px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid var(--line2);cursor:pointer;font-size:12px;color:var(--ink);transition:all 0.15s;position:relative;}
+.sub-chip:hover{border-color:var(--o);color:var(--o);transform:translateY(-1px);}
+.sub-chip.act{background:var(--ink);color:var(--bg);border-color:var(--ink);}
+.sub-chip.act .nbadge{background:var(--o);color:#fff;}
+.sub-chip img{width:24px;height:24px;border-radius:6px;object-fit:cover;}
+.sub-chip .nbadge{background:var(--op);color:var(--o);font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;}
+.sub-chip .x{background:none;border:none;color:var(--ink4);cursor:pointer;font-size:12px;padding:0 2px;margin-left:2px;display:none;}
+.sub-chip:hover .x{display:inline;}
+.sub-chip.add{border-style:dashed;color:var(--ink3);padding:7px 16px;background:transparent;}
+.sub-chip.add:hover{color:var(--o);border-color:var(--o);}
+
+.srs{margin-top:10px;max-height:240px;overflow-y:auto;}
+.si{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s;border:1px solid transparent;}
+.si:hover{background:rgba(255,255,255,0.04);border-color:var(--line2);}
+.si.sel{background:var(--op);border-color:var(--o);}
+.si img{width:40px;height:40px;border-radius:7px;object-fit:cover;}
+.si .iph{width:40px;height:40px;border-radius:7px;background:var(--pl);display:flex;align-items:center;justify-content:center;color:var(--p);font-size:16px;}
+.sn{font-size:12px;font-weight:600;color:var(--ink);}
+.sa{font-size:10px;color:var(--ink3);margin-top:2px;}
+.sl{text-align:center;padding:16px;color:var(--ink3);font-size:11px;}
+
+/* Modal (for login only) */
+.mb{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:400;}
+.mb.vis{display:flex;}
+.ml{background:var(--bg2);border:1px solid var(--line2);border-radius:16px;padding:28px;width:400px;max-width:90vw;}
+.ml h3{font-family:'Cormorant Garamond',serif;font-size:24px;font-style:italic;font-weight:400;margin-bottom:12px;color:var(--ink);text-align:center;}
+.fg{margin-bottom:12px;}
+.fg label{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;font-weight:500;}
+.fg input,.fg textarea,.fg select{width:100%;padding:11px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--line2);border-radius:9px;font-size:13px;font-family:inherit;color:var(--ink);}
+.fg input:focus,.fg textarea:focus,.fg select:focus{outline:none;border-color:var(--o);}
+.fg select option{background:var(--bg3);}
+.fg .hint{font-size:10px;color:var(--ink3);margin-top:4px;}
+.ma{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+
+/* KG */
+.kg-cat-header{cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px 18px;background:linear-gradient(135deg,var(--bg2),var(--bg3));border-radius:12px;margin-bottom:12px;border:1px solid var(--line);border-left-width:3px;}
+.kg-cat-header:hover{border-color:var(--line2);}
+.kg-sub-title{font-size:12px;font-weight:600;padding:6px 0 8px;display:flex;align-items:center;gap:7px;letter-spacing:0.3px;}
+.kn{background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:8px;transition:all 0.2s;}
+.kn:hover{border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.04);}
 .kg-collapsed{display:none!important;}
 
 /* Skills */
-.skill-card{background:var(--w);border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:12px;border:1px solid rgba(0,0,0,0.04);}
-.skill-card h4{font-size:14px;font-weight:700;margin-bottom:4px;}
-.skill-card .skill-meta{font-size:10px;color:var(--g);margin-bottom:12px;line-height:1.6;}
-.skill-card textarea{width:100%;min-height:200px;border:1px solid var(--gl);border-radius:8px;padding:12px;font-size:12px;line-height:1.6;font-family:'JetBrains Mono',monospace;resize:vertical;color:var(--bk);}
+.skill-card{background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px;padding:22px;margin-bottom:14px;}
+.skill-card h4{font-size:15px;font-weight:600;margin-bottom:4px;color:var(--ink);}
+.skill-card .skill-meta{font-size:10px;color:var(--ink3);margin-bottom:14px;line-height:1.7;letter-spacing:0.2px;}
+.skill-card textarea{width:100%;min-height:220px;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:14px;font-size:12px;line-height:1.7;font-family:'JetBrains Mono',monospace;resize:vertical;color:var(--ink);}
 .skill-card textarea:focus{outline:none;border-color:var(--o);}
+.skill-category-header{font-size:11px;font-weight:600;margin:24px 0 12px;color:var(--ink3);letter-spacing:1.2px;text-transform:uppercase;}
 
-/* Filter */
-.fb{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
-.fc{padding:5px 14px;border-radius:16px;font-size:11px;border:1px solid var(--gl);background:var(--w);cursor:pointer;transition:all 0.15s;font-family:inherit;font-weight:500;}
-.fc:hover{border-color:var(--o);color:var(--o);}
-.fc.act{background:var(--bk);color:var(--w);border-color:var(--bk);}
+/* Scrollbar */
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:10px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.15);}
 
-/* Subscription chips (in podcast subview) */
-.sub-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 6px;border-radius:20px;background:var(--w);border:1px solid rgba(0,0,0,0.06);cursor:pointer;font-size:12px;color:var(--bk);transition:all 0.15s;position:relative;box-shadow:0 1px 2px rgba(0,0,0,0.03);}
-.sub-chip:hover{border-color:var(--o);color:var(--o);transform:translateY(-1px);box-shadow:0 3px 10px rgba(255,106,0,0.1);}
-.sub-chip.act{background:var(--bk);color:var(--w);border-color:var(--bk);}
-.sub-chip.act .nbadge{background:var(--o);color:white;}
-.sub-chip img{width:22px;height:22px;border-radius:5px;object-fit:cover;}
-.sub-chip .nbadge{background:var(--op);color:var(--o);font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;}
-.sub-chip .x{background:none;border:none;color:var(--gl);cursor:pointer;font-size:11px;padding:0 2px;margin-left:2px;display:none;}
-.sub-chip:hover .x{display:inline;}
-.sub-chip.add{border-style:dashed;color:var(--g);padding:6px 14px;}
-.sub-chip.add:hover{color:var(--o);border-color:var(--o);}
-
-/* Modal */
-.mb{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:100;}
-.mb.vis{display:flex;}
-.ml{background:var(--w);border-radius:12px;padding:22px;width:500px;max-width:90vw;max-height:85vh;overflow-y:auto;}
-.ml h3{font-size:15px;font-weight:700;margin-bottom:12px;}
-.fg{margin-bottom:10px;}.fg label{display:block;font-size:10px;font-weight:500;margin-bottom:3px;}
-.fg input,.fg textarea,.fg select{width:100%;padding:7px 9px;border:1px solid var(--gl);border-radius:6px;font-size:12px;font-family:inherit;}
-.fg input:focus,.fg textarea:focus,.fg select:focus{outline:none;border-color:var(--o);}
-.fg .hint{font-size:10px;color:var(--g);margin-top:3px;}
-.ma{display:flex;gap:5px;justify-content:flex-end;margin-top:14px;}
-.srs{margin-top:8px;max-height:220px;overflow-y:auto;}
-.si{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;transition:all 0.15s;border:1px solid transparent;}
-.si:hover{background:var(--op);border-color:var(--o);}
-.si.sel{background:var(--op);border-color:var(--o);}
-.si img{width:36px;height:36px;border-radius:6px;object-fit:cover;}
-.si .iph{width:36px;height:36px;border-radius:6px;background:rgba(139,92,246,0.1);display:flex;align-items:center;justify-content:center;color:var(--p);font-size:14px;}
-.sn{font-size:11px;font-weight:600;}.sa{font-size:9px;color:var(--g);}
-.sl{text-align:center;padding:12px;color:var(--g);font-size:11px;}
-.nt{width:100%;min-height:250px;border:1px solid var(--gl);border-radius:7px;padding:12px;font-size:12px;line-height:1.6;font-family:'Noto Sans SC',sans-serif;resize:vertical;}.nt:focus{outline:none;border-color:var(--o);}
-.emp{text-align:center;padding:44px 24px;color:var(--g);}.emp .ic{font-size:32px;margin-bottom:8px;}.emp h3{font-size:14px;color:var(--bk);margin-bottom:4px;}.emp p{font-size:11px;}
-
-@media(max-width:768px){.app{grid-template-columns:1fr;}.sb{display:none;}.sr{grid-template-columns:1fr 1fr;}.drw{width:100vw;right:-100vw;}.inbox-add{grid-template-columns:1fr 1fr;}}
+@media(max-width:768px){
+  .page{padding:0 18px 100px;}
+  .hero{padding:60px 0 36px;}
+  .hero .logo{font-size:72px;}
+  .pills{gap:8px;}
+  .pill{padding:10px 18px;font-size:12px;}
+  .drw{width:100vw;right:-100vw;}
+  .auth-slot{right:18px;top:18px;}
+  .tab{font-size:16px;padding:10px 14px;}
+}
 </style>
 </head>
 <body>
-<div class="app">
-  <aside class="sb">
-    <div class="sb-h">
-      <div class="brand"><img src="/logo.svg"><h1>Murmur</h1></div>
-      <div class="subtitle">低语 · 知识在此汇聚</div>
+<div class="auth-slot" id="authBtn"></div>
+
+<div class="page">
+  <section class="hero">
+    <div class="logo">murmur</div>
+    <div class="tagline"><b>低语</b>knowledge softly gathered</div>
+    <div class="pills">
+      <button class="pill pill-podcast" onclick="openSrc('podcast')">
+        <span class="pill-ic">&#127911;</span> 播客
+        <span class="pill-ct" id="pill-ct-podcast" style="display:none">0</span>
+      </button>
+      <button class="pill pill-lark" onclick="openSrc('lark')">
+        <span class="pill-ic">&#128214;</span> 飞书
+      </button>
+      <button class="pill pill-note" onclick="openSrc('note')">
+        <span class="pill-ic">&#9997;</span> 笔记
+      </button>
     </div>
-    <nav class="sb-nav">
-      <div class="ni act" data-v="inbox" onclick="sw('inbox')"><span class="ic">&#9993;</span>Inbox<span class="bdg" id="bdg" style="display:none">0</span></div>
-      <div class="ni" data-v="library" onclick="sw('library')"><span class="ic">&#128218;</span>Library</div>
-      <div class="ni" data-v="kg" onclick="sw('kg')"><span class="ic">&#9733;</span>知识图谱</div>
-      <div class="ni" data-v="skills" onclick="sw('skills')"><span class="ic">&#9881;</span>Skills</div>
-      <div class="ni" data-v="fav" onclick="sw('fav')"><span class="ic">&#11088;</span>Starred</div>
-    </nav>
-    <div class="sb-sec" id="podList" style="display:none;"><h3>订阅列表</h3><div id="pl"></div></div>
-    <div class="sb-bt" id="authBtn"></div>
-  </aside>
-  <main class="mn" id="mc"></main>
+  </section>
+
+  <nav class="tabs">
+    <button class="tab act" data-v="library" onclick="sw('library')">Library</button>
+    <button class="tab" data-v="kg" onclick="sw('kg')">Graph</button>
+    <button class="tab" data-v="skills" onclick="sw('skills')">Skills</button>
+  </nav>
+
+  <main class="content" id="mc"></main>
 </div>
 
-<!-- Drawer -->
+<!-- Note drawer (markdown viewer) -->
 <div class="dov" id="dov" onclick="cd()"></div>
-<div class="drw" id="drw"><div class="dh"><h3 id="dt">笔记</h3><button class="dc" onclick="cd()">&#10005;</button></div><div class="dbody" id="db"></div><div class="dactions" id="dactions" style="display:none;"></div></div>
+<div class="drw" id="drw">
+  <div class="dh"><h3 id="dt">笔记</h3><button class="dc" onclick="cd()">&#10005;</button></div>
+  <div class="dbody" id="db"></div>
+  <div class="dactions" id="dactions" style="display:none;"></div>
+</div>
 
-<!-- Term Popover -->
+<!-- Source drawer (3 pills) -->
+<div class="dov" id="sdov" onclick="closeSrc()"></div>
+<div class="drw" id="sdrw">
+  <div class="dh"><h3 id="sdt">来源</h3><button class="dc" onclick="closeSrc()">&#10005;</button></div>
+  <div class="dbody" id="sdb"></div>
+</div>
+
+<!-- Term popover -->
 <div class="term-pop" id="tpop"></div>
 
-<!-- Modals -->
-<div class="mb" id="lm"><div class="ml" style="width:360px;text-align:center;">
-  <h3>&#128274; 管理员登录</h3>
-  <p style="font-size:12px;color:var(--g);margin-bottom:16px;">登录后可以添加来源、提炼笔记、编辑知识图谱</p>
-  <div class="fg"><input type="password" id="lpw" placeholder="输入管理员密码" onkeydown="if(event.key==='Enter')doLogin()" style="text-align:center;font-size:15px;padding:12px;"></div>
-  <div id="lerr" style="color:var(--rd);font-size:12px;margin-bottom:8px;"></div>
-  <div class="ma" style="justify-content:center;"><button class="bt bp" style="width:100%;padding:10px;" onclick="doLogin()">登录</button></div>
-  <p style="font-size:10px;color:var(--gl);margin-top:12px;">访客可以自由浏览所有内容</p>
-</div></div>
-
-<div class="mb" id="am"><div class="ml"><h3>添加播客订阅</h3><div class="fg"><label>搜索播客名称</label><input id="ps" placeholder="输入名称自动搜索" oninput="ds()"></div><div class="srs" id="sr"></div><hr style="border:none;border-top:1px solid #eee;margin:8px 0;"><div class="fg"><label>或手动填写</label><input id="pnm" placeholder="播客名称" style="margin-bottom:4px;"><input id="prs" placeholder="RSS 链接（可选）"></div><div class="ma"><button class="bt bou" onclick="hm('am')">取消</button><button class="bt bp" onclick="apm()">手动添加</button></div></div></div>
-
-<div class="mb" id="om"><div class="ml"><h3>&#128279; 喂入单集播客</h3><div class="fg"><label>单集标题 *</label><input id="ot"></div><div class="fg"><label>链接</label><input id="ol"></div><div class="fg"><label>备注</label><textarea id="od" rows="2"></textarea></div><div class="ma"><button class="bt bou" onclick="hm('om')">取消</button><button class="bt bp" onclick="ao()">加入</button></div></div></div>
-
-<div class="mb" id="tm"><div class="ml" style="width:600px;"><h3 id="tt">上传逐字稿</h3><div class="fg"><textarea id="ti" class="nt" placeholder="粘贴逐字稿..."></textarea></div><div class="ma"><button class="bt bou" onclick="hm('tm')">取消</button><button class="bt bp" onclick="st()">&#9889; 开始提炼</button></div></div></div>
-
-<!-- Lark search modal -->
-<div class="mb" id="larkm"><div class="ml">
-  <h3>&#128214; 飞书文档</h3>
-  <p style="font-size:11px;color:var(--g);margin-bottom:10px;">搜索你的飞书文档库（通过 lark-cli）</p>
-  <div class="fg"><label>搜索文档标题</label><input id="lark-q" placeholder="输入关键词..." oninput="dsLark()"></div>
-  <div class="srs" id="lark-sr"></div>
-  <div class="fg"><label>选择提炼 Skill</label><select id="lark-skill"></select><div class="hint" id="lark-skill-desc"></div></div>
-  <div class="ma"><button class="bt bou" onclick="hm('larkm')">取消</button><button class="bt bp" id="lark-btn" onclick="addLark()" disabled>先选择文档</button></div>
-</div></div>
-
-<!-- Upload note modal -->
-<div class="mb" id="notem"><div class="ml" style="width:640px;">
-  <h3>&#9997; 上传笔记</h3>
-  <div class="fg"><label>上传文件（.md / .txt / .docx）</label><input type="file" id="note-file" accept=".md,.txt,.markdown,.docx" onchange="handleNoteFile(event)"><div class="hint">docx 会自动转成 markdown</div></div>
-  <div class="fg"><label>标题</label><input id="note-title" placeholder="笔记标题"></div>
-  <div class="fg"><label>内容（可直接编辑）</label><textarea id="note-content" class="nt" style="min-height:200px;font-family:'JetBrains Mono',monospace;font-size:11px;" placeholder="从文件解析，或直接粘贴..."></textarea></div>
-  <div class="fg"><label>选择提炼 Skill</label><select id="note-skill"></select><div class="hint" id="note-skill-desc"></div></div>
-  <div class="ma"><button class="bt bou" onclick="hm('notem')">取消</button><button class="bt bp" onclick="addNote()">⚡ 添加并提炼</button></div>
+<!-- Login modal (kept as modal for quick dismiss) -->
+<div class="mb" id="lm"><div class="ml">
+  <h3>管理员登录</h3>
+  <p style="font-size:11px;color:var(--ink3);margin-bottom:18px;text-align:center;">登录后可添加来源 · 提炼笔记 · 编辑知识图谱</p>
+  <div class="fg"><input type="password" id="lpw" placeholder="输入管理员密码" onkeydown="if(event.key==='Enter')doLogin()" style="text-align:center;font-size:15px;padding:14px;"></div>
+  <div id="lerr" style="color:var(--rd);font-size:11px;margin-bottom:8px;text-align:center;"></div>
+  <div class="ma" style="justify-content:center;"><button class="bt bp" style="width:100%;padding:12px;" onclick="doLogin()">登录</button></div>
+  <p style="font-size:10px;color:var(--ink4);margin-top:14px;text-align:center;">访客可以自由浏览所有内容</p>
 </div></div>
 
 <script>
-let P=[],E=[],V='inbox',CF=null,ST=null,PT={},termDB={},kgEdits={},isAdmin=false,authToken=localStorage.getItem('authToken')||'';
+let P=[],E=[],V='library',CF=null,ST=null,PT={},termDB={},kgEdits={},isAdmin=false,authToken=localStorage.getItem('authToken')||'';
 let skills=[],notes=[];
-let _selectedLark=null,_larkTimer=null;
+let _selectedLark=null,_larkTimer=null,_selectedSearch=null,_sT=null;
 
 async function api(p,o={}){
   const headers={'Content-Type':'application/json'};
@@ -270,16 +399,17 @@ async function ld(){
   const editsArr=await api('/kg/edits');
   kgEdits={};editsArr.forEach(e=>kgEdits[e.term]=e);
   E.sort((a,b)=>(b.pub_date?new Date(b.pub_date):0)-(a.pub_date?new Date(a.pub_date):0));
-  buildTermDB();rs();rv();
+  buildTermDB();updatePillCounts();rv();
+  // refresh open source drawer if any
+  if(window._openSrc)renderSrc(window._openSrc);
 }
 function updateAuthUI(){
   const ab=document.getElementById('authBtn');
   if(ab)ab.innerHTML=isAdmin
-    ?'<span style="color:var(--gn);">●</span> 管理员 <span style="cursor:pointer;opacity:0.7;float:right;" onclick="logout()">登出</span>'
-    :'<span style="color:rgba(255,255,255,0.3);">○</span> 访客模式 <span style="cursor:pointer;color:var(--o);float:right;" onclick="showLoginModal()">登录</span>';
-  document.querySelectorAll('.admin-only').forEach(el=>{el.style.display=isAdmin?'':'none';});
+    ?'<span class="dot">●</span>管理员 <a onclick="logout()">登出</a>'
+    :'<span style="color:var(--ink4)">○</span> 访客 <a onclick="showLoginModal()">登录</a>';
 }
-function showLoginModal(){sm('lm');document.getElementById('lpw').focus();}
+function showLoginModal(){sm('lm');setTimeout(()=>document.getElementById('lpw').focus(),60);}
 async function doLogin(){
   const pw=document.getElementById('lpw').value;
   try{
@@ -290,15 +420,18 @@ async function doLogin(){
 }
 function logout(){authToken='';localStorage.removeItem('authToken');isAdmin=false;ld();}
 
-// Term DB
+function updatePillCounts(){
+  const pendE=E.filter(e=>e.status==='new'||e.status==='processing').length;
+  const el=document.getElementById('pill-ct-podcast');
+  if(pendE>0){el.textContent=pendE;el.style.display='';}else el.style.display='none';
+}
+
+// ========== TERM DB ==========
 function buildTermDB(){
   termDB={};
   const parseDict=(content,src,id)=>{
     if(!content)return;
-    // Find dictionary section (any of: 模块C, 专业名词, 名词...词典)
     const ds=content.split(/##\s*(?:模块\s*C|专业名词|名词.*词典)/i)[1]||'';
-    // Match **[term]** or **term** with optional （English） and definition
-    // Allow optional list markers like "- " or "* " before
     const re=/(?:^|\n)\s*(?:[-*]\s*)?\*\*\[?([^\]*\n]+?)\]?\*\*[:：]?\s*(?:（([^）\n]*)）|\(([^)\n]*)\))?([^\n]*(?:\n(?!\s*(?:[-*]\s*)?\*\*|\n|#)[^\n#]*)*)/g;
     let m;
     while((m=re.exec(ds))!==null){
@@ -307,7 +440,7 @@ function buildTermDB(){
       let def=(m[4]||'').replace(/^[。，,.\s：:]+/,'').trim().replace(/\n/g,' ').trim();
       if(!name||name.length<2||name.length>30)continue;
       if(/^(核心命题|展开论述|话语体系|模块|章节|观点|出处|框架|要求)/.test(name))continue;
-      if(!def||def.length<3)continue;  // skip entries without definition
+      if(!def||def.length<3)continue;
       name=name.replace(/\s+/g,' ');
       if(!termDB[name])termDB[name]={name,eng,def,episodes:[]};
       if(!termDB[name].episodes.find(x=>x.id===id)){
@@ -330,131 +463,64 @@ function highlightTerms(html){
   return html;
 }
 
-function rs(){
-  const nc=E.filter(e=>e.status==='new'||e.status==='processing').length+notes.filter(n=>n.status==='new'||n.status==='processing').length;
-  const b=document.getElementById('bdg');b.textContent=nc;b.style.display=nc>0?'':'none';
-  const sec=document.getElementById('podList');
-  sec.style.display='none';  // no longer used, podcasts live in Library now
-}
-
-function sw(v){V=v;CF=null;ST=null;window._pf=null;document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('act',n.dataset.v===v));rs();rv();}
+// ========== NAV ==========
+function sw(v){V=v;CF=null;ST=null;window._pf=null;document.querySelectorAll('.tab').forEach(n=>n.classList.toggle('act',n.dataset.v===v));rv();}
 
 function rv(){
   const m=document.getElementById('mc');
-  ({inbox:rInbox,library:rLibrary,kg:rKG,skills:rSkills,fav:rFav}[V]||rInbox)(m);
-}
-
-// ========== INBOX ==========
-function rInbox(el){
-  const pendE=E.filter(e=>e.status==='new'||e.status==='processing');
-  const pendN=notes.filter(n=>n.status==='new'||n.status==='processing');
-  const doneE=E.filter(e=>e.status==='done');
-  const doneN=notes.filter(n=>n.status==='done');
-
-  el.innerHTML=`<div class="ph"><h2>Inbox</h2><div class="acs">${isAdmin?`<button class="bt bou" onclick="rf(this)">&#8635; 刷新 RSS</button>`:''}</div></div>
-    ${isAdmin?`<div class="inbox-add">
-      <div class="add-btn" onclick="showAdd()"><div class="add-icon">&#127911;</div><div class="add-label">播客订阅</div><div class="add-desc">RSS · 自动更新</div></div>
-      <div class="add-btn" onclick="openLarkModal()"><div class="add-icon">&#128214;</div><div class="add-label">飞书文档</div><div class="add-desc">搜索 · 拉取 · 提炼</div></div>
-      <div class="add-btn" onclick="openNoteModal()"><div class="add-icon">&#9997;</div><div class="add-label">上传笔记</div><div class="add-desc">md / docx · 概念提取</div></div>
-    </div>`:''}
-    <div class="sr">
-      <div class="sc"><div class="nm" style="color:var(--o)">${pendE.length+pendN.length}</div><div class="lb">待处理</div></div>
-      <div class="sc"><div class="nm" style="color:var(--gn)">${doneE.length+doneN.length}</div><div class="lb">已完成</div></div>
-      <div class="sc"><div class="nm">${Object.keys(termDB).length}</div><div class="lb">概念</div></div>
-      <div class="sc"><div class="nm">${P.filter(p=>p.name!=='_散装收藏').length}</div><div class="lb">订阅</div></div>
-    </div>
-    ${pendE.length||pendN.length?`<h3 style="margin-bottom:8px;font-size:12px;">&#9889; 处理中 / 待处理</h3><div class="el">${pendE.map(rc).join('')}${pendN.map(rnItem).join('')}</div><br>`:''}
-    ${pendE.length===0&&pendN.length===0?`<div class="emp"><div class="ic">&#128172;</div><h3>一切已就绪</h3><p>点击上方按钮添加新的知识来源</p></div>`:''}`;
-  pendE.filter(e=>e.status==='processing').forEach(e=>poll(e.id));
-  pendN.filter(n=>n.status==='processing').forEach(n=>pollNote(n.id));
+  ({library:rLibrary,kg:rKG,skills:rSkills}[V]||rLibrary)(m);
 }
 
 // ========== LIBRARY ==========
 function rLibrary(el){
   const tf=ST;
+  const pendE=E.filter(e=>e.status==='new'||e.status==='processing');
+  const pendN=notes.filter(n=>n.status==='new'||n.status==='processing');
 
-  // Unified library across sources
   const doneE=E.filter(e=>e.status==='done').map(e=>({kind:'ep',type:'podcast',id:e.id,title:e.title,source:e.podcast_name,date:e.pub_date,content:e.notes,starred:e.starred,artwork:e.podcast_artwork,_raw:e}));
   const doneN=notes.filter(n=>n.status==='done').map(n=>({kind:'note',type:n.source_type||'note',id:n.id,title:n.title,source:n.source_type,date:n.created_at,content:n.content,starred:n.starred,_raw:n}));
-  const allDone=[...doneE,...doneN].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  let allDone=[...doneE,...doneN].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
 
-  const total=allDone.length;
+  const counts={all:allDone.length,podcast:doneE.length,lark:doneN.filter(x=>x.type==='lark').length,note:doneN.filter(x=>x.type==='note').length,starred:allDone.filter(x=>x.starred).length};
 
-  // Header with filter chips
-  let html=`<div class="ph"><h2>Library</h2><span class="sub">${total} 篇笔记</span><div class="acs">${(tf==='podcast'&&isAdmin)?`<button class="bt bou" onclick="rf(this)">&#8635; 刷新 RSS</button><button class="bt bp" onclick="showAdd()">+ 新订阅</button>`:''}</div></div>
+  let html=`<div class="ph"><h2>Library</h2><span class="sub">${counts.all} pieces</span></div>
     <div class="fb">
-      <span class="fc ${!tf?'act':''}" onclick="ST=null;CF=null;rv()">全部 · ${total}</span>
-      <span class="fc ${tf==='podcast'?'act':''}" onclick="ST='podcast';rv()">&#127911; 播客</span>
-      <span class="fc ${tf==='lark'?'act':''}" onclick="ST='lark';rv()">&#128214; 飞书</span>
-      <span class="fc ${tf==='note'?'act':''}" onclick="ST='note';rv()">&#9997; 笔记</span>
+      <span class="fc ${!tf?'act':''}" onclick="ST=null;rv()">全部 · ${counts.all}</span>
+      <span class="fc ${tf==='podcast'?'act':''}" onclick="ST='podcast';rv()">&#127911; 播客 · ${counts.podcast}</span>
+      <span class="fc ${tf==='lark'?'act':''}" onclick="ST='lark';rv()">&#128214; 飞书 · ${counts.lark}</span>
+      <span class="fc ${tf==='note'?'act':''}" onclick="ST='note';rv()">&#9997; 笔记 · ${counts.note}</span>
+      <span class="fc ${tf==='starred'?'act':''}" onclick="ST='starred';rv()">&#11088; 收藏 · ${counts.starred}</span>
     </div>`;
 
-  // === Podcast sub-view ===
-  if(tf==='podcast'){
-    const subs=P.filter(p=>p.name!=='_散装收藏');
-    let f=E;
-    if(CF)f=f.filter(e=>e.podcast_id===CF);
-    const sf=window._pf||null;
-    const counts={all:f.length,new:f.filter(e=>e.status==='new').length,processing:f.filter(e=>e.status==='processing').length,done:f.filter(e=>e.status==='done').length,skipped:f.filter(e=>e.status==='skipped').length};
-
-    // Subscription chips at the top
-    html+=`<div style="margin-bottom:16px;">
-      <div style="font-size:11px;color:var(--g);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;">订阅（点击筛选）</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <div class="sub-chip ${!CF?'act':''}" onclick="CF=null;rv()">全部订阅 · ${E.length}</div>
-        ${subs.map(p=>`<div class="sub-chip ${CF===p.id?'act':''}" onclick="CF=${p.id};rv()">
-          ${p.artwork?`<img src="${p.artwork}">`:'🎙'}
-          ${p.name}${p.new_count>0?` <span class="nbadge">${p.new_count}</span>`:''}
-          ${isAdmin?`<button class="x" onclick="event.stopPropagation();dp(${p.id},'${p.name.replace(/'/g,"\\'")}')">✕</button>`:''}
-        </div>`).join('')}
-        ${isAdmin?`<div class="sub-chip add" onclick="sm('om')">+ 喂入单集</div>`:''}
-      </div>
-    </div>`;
-
-    // Episode status filter
-    html+=`<div class="fb" style="margin-top:8px;">
-      ${['all','new','processing','done','skipped'].map(k=>{const l={all:'全部',new:'待处理',processing:'提炼中',done:'已提炼',skipped:'已跳过'};return`<span class="fc ${(k==='all'&&!sf)||sf===k?'act':''}" onclick="window._pf=${k==='all'?'null':`'${k}'`};rv()">${l[k]} · ${counts[k]}</span>`;}).join('')}
-    </div>`;
-
-    const filtered=sf?f.filter(e=>e.status===sf):f;
-    html+=`<div class="el">${filtered.length?filtered.map(rc).join(''):'<div class="emp"><div class="ic">&#127911;</div><h3>暂无剧集</h3></div>'}</div>`;
-    el.innerHTML=html;
-    filtered.filter(e=>e.status==='processing').forEach(e=>poll(e.id));
-    return;
+  // Pending queue (show if no filter or matching)
+  if(!tf&&(pendE.length||pendN.length)){
+    html+=`<div class="pending-block"><h3>&#9889; 处理中 / 待处理 · ${pendE.length+pendN.length}</h3><div class="el">${pendE.map(rc).join('')}${pendN.map(rnItem).join('')}</div></div>`;
   }
 
-  // === Default: unified library ===
-  const filtered=tf?allDone.filter(x=>x.type===tf):allDone;
-  html+=`<div class="el">${filtered.length?filtered.map(renderLibItem).join(''):'<div class="emp"><div class="ic">&#128218;</div><h3>暂无笔记</h3><p>从 Inbox 添加内容开始提炼</p></div>'}</div>`;
-  el.innerHTML=html;
-}
+  let filtered=allDone;
+  if(tf==='starred')filtered=allDone.filter(x=>x.starred);
+  else if(tf)filtered=allDone.filter(x=>x.type===tf);
 
-function rPodcasts(el){rLibrary(el);}
+  html+=`<div class="el">${filtered.length?filtered.map(renderLibItem).join(''):`<div class="emp"><div class="ic">&#128218;</div><h3>silence</h3><p>点击上方的 pill 开始添加内容</p></div>`}</div>`;
+  el.innerHTML=html;
+  pendE.filter(e=>e.status==='processing').forEach(e=>poll(e.id));
+  pendN.filter(n=>n.status==='processing').forEach(n=>pollNote(n.id));
+}
 
 function renderLibItem(item){
   const typeIcon={podcast:'&#127911;',lark:'&#128214;',note:'&#9997;'}[item.type]||'&#128196;';
   const dt=item.date?new Date(item.date).toLocaleDateString('zh-CN'):'';
   const summary=item.content?getSummary(item.content):'';
-  const starred=item.starred?'&#11088;':'&#9734;';
+  const starred=item.starred?'&#9733;':'&#9734;';
   const clickFn=item.kind==='ep'?`od(${item.id})`:`odn(${item.id})`;
   const toggleFn=item.kind==='ep'?`toggleStar(${item.id})`:`toggleStarN(${item.id})`;
   const sourceLabel=item.type==='podcast'?(item.source==='_散装收藏'?'散装':item.source):(item.type==='lark'?'飞书文档':'笔记');
-  return`<div class="ec" onclick="${clickFn}" style="cursor:pointer;"><div class="et">
-    ${item.artwork?`<img class="ea" src="${item.artwork}">`:`<div class="ea">${typeIcon}</div>`}
-    <div class="ei"><div class="etl">${isAdmin?`<button class="star-btn" onclick="event.stopPropagation();${toggleFn}">${starred}</button>`:(item.starred?'&#11088; ':'')}${item.title}</div>
-      <div class="em"><span class="src-chip">${typeIcon} ${sourceLabel}</span>${dt?`<span>${dt}</span>`:''}</div>
+  return`<div class="ec type-${item.type}" onclick="${clickFn}"><div class="et">
+    ${item.artwork?`<div class="ea"><img src="${item.artwork}"></div>`:`<div class="ea">${typeIcon}</div>`}
+    <div class="ei"><div class="etl">${isAdmin?`<button class="star-btn ${item.starred?'on':''}" onclick="event.stopPropagation();${toggleFn}">${starred}</button>`:(item.starred?'&#9733; ':'')}${item.title}</div>
+      <div class="em"><span class="src-chip ${item.type}">${typeIcon} ${sourceLabel}</span>${dt?`<span>${dt}</span>`:''}</div>
       ${summary?`<div class="ed">${summary}</div>`:''}
-      <div class="eac"><button class="bt bp bs" onclick="event.stopPropagation();${clickFn}">&#128196; 查看笔记</button></div>
     </div></div></div>`;
-}
-
-// ========== STARRED ==========
-function rFav(el){
-  const favE=E.filter(e=>e.starred).map(e=>({kind:'ep',type:'podcast',id:e.id,title:e.title,source:e.podcast_name,date:e.pub_date,content:e.notes,starred:1,artwork:e.podcast_artwork}));
-  const favN=notes.filter(n=>n.starred).map(n=>({kind:'note',type:n.source_type||'note',id:n.id,title:n.title,source:n.source_type,date:n.created_at,content:n.content,starred:1}));
-  const all=[...favE,...favN];
-  el.innerHTML=`<div class="ph"><h2>&#11088; Starred</h2></div>
-    <div class="el">${all.length?all.map(renderLibItem).join(''):'<div class="emp"><div class="ic">&#11088;</div><h3>还没有收藏</h3><p>点击笔记标题旁的星号收藏</p></div>'}</div>`;
 }
 
 // ========== SKILLS ==========
@@ -462,10 +528,10 @@ function rSkills(el){
   const grouped={};
   skills.forEach(s=>{if(!grouped[s.category])grouped[s.category]=[];grouped[s.category].push(s);});
   const labels={podcast:'&#127911; 播客专用',transcript:'&#128483; 对谈 / 会议 / 访谈',article:'&#128196; 文章 / 结构化笔记',research:'&#128269; 调研 / 工作内容'};
-  el.innerHTML=`<div class="ph"><h2>&#9881; Skills</h2><span style="font-size:11px;color:var(--g);margin-left:10px;">按内容类型分类的提炼模板</span><div class="acs">${isAdmin?`<button class="bt bp" onclick="newSkill()">+ 新建</button>`:''}</div></div>
-    <p style="font-size:11px;color:var(--g);margin-bottom:16px;">任何非播客来源（飞书/笔记）都可以选择任意 Skill。变量用 <code style="background:#f0f0f0;padding:1px 5px;border-radius:3px;">{{variable}}</code> 表示。</p>
+  el.innerHTML=`<div class="ph"><h2>Skills</h2><span class="sub">prompt templates</span><div class="acs">${isAdmin?`<button class="bt bp" onclick="newSkill()">+ 新建</button>`:''}</div></div>
+    <p style="font-size:11px;color:var(--ink3);margin-bottom:10px;">任何非播客来源都可选择任意 Skill · 变量用 <code style="background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;color:var(--p);">{{variable}}</code> 表示</p>
     ${Object.entries(grouped).map(([cat,sks])=>`
-      <h3 style="font-size:12px;font-weight:600;margin:18px 0 10px;color:var(--dk);">${labels[cat]||cat}</h3>
+      <div class="skill-category-header">${labels[cat]||cat}</div>
       ${sks.map(s=>`<div class="skill-card">
         <h4>${s.name}</h4>
         <div class="skill-meta">${s.description||''}<br>变量：${(JSON.parse(s.variables||'[]')).map(v=>'{{'+v+'}}').join(' · ')}</div>
@@ -531,7 +597,7 @@ function rKG(el){
     if(e.new_subcategory)c.forceSubcategory=e.new_subcategory;
     return c;
   });
-  if(!terms.length){el.innerHTML='<div class="ph"><h2>&#9733; 知识图谱</h2></div><div class="emp"><div class="ic">&#128218;</div><h3>暂无数据</h3><p>提炼笔记后，术语会自动出现</p></div>';return;}
+  if(!terms.length){el.innerHTML='<div class="ph"><h2>Graph</h2></div><div class="emp"><div class="ic">&#128218;</div><h3>还没有概念</h3><p>提炼笔记后，术语会自动在这里汇聚</p></div>';return;}
 
   const tree={};const catList=Object.keys(TAXONOMY);
   terms.forEach(t=>{
@@ -543,44 +609,44 @@ function rKG(el){
     tree[cat][sub].push(t);
   });
 
-  let html=`<div class="ph"><h2>&#9733; 知识图谱</h2><p style="font-size:10px;color:var(--g);margin-left:8px;">${terms.length} 个概念 · ${E.filter(e=>e.status==='done').length+notes.filter(n=>n.status==='done').length} 篇笔记</p></div>`;
+  let html=`<div class="ph"><h2>Graph</h2><span class="sub">${terms.length} concepts · ${E.filter(e=>e.status==='done').length+notes.filter(n=>n.status==='done').length} notes</span></div>`;
   const cats=[...catList,'其他'];
   cats.forEach(cat=>{
     if(!tree[cat])return;
     const info=TAXONOMY[cat]||{icon:'📎',color:'#888'};
     const subs=Object.entries(tree[cat]);
     const total=subs.reduce((s,x)=>s+x[1].length,0);
-    html+=`<div style="margin-bottom:20px;">
-      <div onclick="this.nextElementSibling.classList.toggle('kg-collapsed')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--w);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:8px;border-left:4px solid ${info.color};">
+    html+=`<div style="margin-bottom:24px;">
+      <div class="kg-cat-header" onclick="this.nextElementSibling.classList.toggle('kg-collapsed')" style="border-left-color:${info.color};">
         <span style="font-size:18px;">${info.icon}</span>
-        <span style="font-size:14px;font-weight:700;flex:1;">${cat}</span>
-        <span style="font-size:10px;color:var(--g);background:var(--bg);padding:2px 8px;border-radius:10px;">${total}</span>
-        <span style="font-size:12px;color:var(--gl);">▼</span>
+        <span style="font-size:15px;font-weight:600;flex:1;">${cat}</span>
+        <span style="font-size:10px;color:var(--ink3);background:rgba(255,255,255,0.04);padding:3px 10px;border-radius:10px;">${total}</span>
+        <span style="font-size:11px;color:var(--ink4);">▼</span>
       </div>
-      <div style="padding-left:16px;">`;
+      <div style="padding-left:18px;">`;
     subs.forEach(([sub,ts])=>{
       ts.sort((a,b)=>(b.episodes?.length||0)-(a.episodes?.length||0));
-      html+=`<div style="margin-bottom:12px;">
-        <div style="font-size:12px;font-weight:600;color:${info.color};padding:4px 0 6px;display:flex;align-items:center;gap:6px;">
+      html+=`<div style="margin-bottom:14px;">
+        <div class="kg-sub-title" style="color:${info.color};">
           <span style="width:6px;height:6px;border-radius:50%;background:${info.color};"></span>${sub}
-          <span style="font-size:9px;color:var(--g);font-weight:400;">(${ts.length})</span>
+          <span style="font-size:9px;color:var(--ink3);font-weight:400;">(${ts.length})</span>
         </div>
-        <div style="padding-left:12px;border-left:2px solid ${info.color}22;">`;
+        <div style="padding-left:14px;border-left:1px solid ${info.color}33;">`;
       ts.forEach(t=>{
         const dn=t.displayName||t.name;
         const tn=t.name.replace(/'/g,"\\'");
-        const epLinks=(t.episodes||[]).map(e=>`<span class="ke" onclick="openToTerm(${typeof e.id==='string'?`'${e.id}'`:e.id},'${tn}')" style="font-size:10px;color:var(--g);cursor:pointer;padding:3px 0;"><span class="pl">${e.podcast==='_散装收藏'?'散装':(e.podcast||'').substring(0,10)}</span> →</span>`).join(' ');
-        const note=t.userNote?`<div style="font-size:10px;color:var(--p);margin:4px 0;padding:4px 8px;background:rgba(139,92,246,0.06);border-radius:4px;">📝 ${t.userNote}</div>`:'';
-        html+=`<div class="kn" style="margin-bottom:6px;padding:12px 14px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <span style="font-size:13px;font-weight:700;color:var(--bk);">${dn}</span>
-            ${t.eng?`<span style="font-size:10px;color:var(--g);">${t.eng}</span>`:''}
-            <span style="font-size:9px;color:var(--g);margin-left:auto;">${(t.episodes||[]).length}篇</span>
-            ${isAdmin?`<button onclick="kgEdit('${tn}')" style="background:none;border:1px solid var(--gl);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;color:var(--g);">编辑</button><button onclick="kgDel('${tn}')" style="background:none;border:1px solid var(--gl);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;color:var(--rd);">✕</button>`:''}
+        const epLinks=(t.episodes||[]).map(e=>`<span onclick="openToTerm(${typeof e.id==='string'?`'${e.id}'`:e.id},'${tn}')" style="font-size:10px;color:var(--ink3);cursor:pointer;padding:3px 0;"><span class="pl">${e.podcast==='_散装收藏'?'散装':(e.podcast||'').substring(0,10)}</span> →</span>`).join(' ');
+        const note=t.userNote?`<div style="font-size:10px;color:var(--p);margin:4px 0;padding:5px 10px;background:var(--pl);border-radius:5px;">&#128221; ${t.userNote}</div>`:'';
+        html+=`<div class="kn">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:13px;font-weight:600;color:var(--ink);">${dn}</span>
+            ${t.eng?`<span style="font-size:10px;color:var(--ink3);">${t.eng}</span>`:''}
+            <span style="font-size:9px;color:var(--ink3);margin-left:auto;">${(t.episodes||[]).length}篇</span>
+            ${isAdmin?`<button onclick="kgEdit('${tn}')" style="background:none;border:1px solid var(--line2);border-radius:4px;padding:1px 7px;font-size:9px;cursor:pointer;color:var(--ink3);">编辑</button><button onclick="kgDel('${tn}')" style="background:none;border:1px solid var(--line2);border-radius:4px;padding:1px 7px;font-size:9px;cursor:pointer;color:var(--rd);">✕</button>`:''}
           </div>
           ${note}
-          <div style="font-size:11px;line-height:1.6;color:#555;margin-bottom:6px;">${(t.def||'').substring(0,150)}${(t.def||'').length>150?'...':''}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">${epLinks}</div>
+          <div style="font-size:12px;line-height:1.7;color:var(--ink2);margin-bottom:6px;">${(t.def||'').substring(0,150)}${(t.def||'').length>150?'...':''}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">${epLinks}</div>
         </div>`;
       });
       html+=`</div></div>`;
@@ -600,11 +666,11 @@ function kgEdit(term){
   const actualSub=edit.new_subcategory||t.forceSubcategory||cs;
   const sMap={};cats.forEach(c=>{sMap[c]=Object.keys(TAXONOMY[c].subs);});
   const m=document.createElement('div');m.className='mb vis';
-  m.innerHTML=`<div class="ml" style="width:440px;"><h3>编辑概念：${term}</h3>
+  m.innerHTML=`<div class="ml" style="width:460px;"><h3>编辑概念</h3><p style="text-align:center;color:var(--ink3);font-size:12px;margin-bottom:16px;">${term}</p>
     <div class="fg"><label>显示名称</label><input id="ke-name" value="${edit.new_name||t.name}"></div>
     <div class="fg"><label>所属领域</label><select id="ke-cat" onchange="document.getElementById('ke-sub').innerHTML=window._subOpts[this.value].map(s=>'<option>'+s+'</option>').join('')">${cats.map(c=>`<option ${c===actualCat?'selected':''}>${c}</option>`).join('')}</select></div>
     <div class="fg"><label>子分类</label><select id="ke-sub">${(sMap[actualCat]||[]).map(s=>`<option ${s===actualSub?'selected':''}>${s}</option>`).join('')}</select></div>
-    <div class="fg"><label>我的标注</label><textarea id="ke-note" rows="2" style="font-size:12px;">${edit.user_note||''}</textarea></div>
+    <div class="fg"><label>我的标注</label><textarea id="ke-note" rows="2">${edit.user_note||''}</textarea></div>
     <div class="ma"><button class="bt bou" onclick="this.closest('.mb').remove()">取消</button><button class="bt bp" onclick="kgSaveEdit('${term.replace(/'/g,"\\'")}')">保存</button></div>
   </div>`;
   document.body.appendChild(m);window._subOpts=sMap;
@@ -619,7 +685,7 @@ async function kgSaveEdit(term){
   await ld();
 }
 
-// ========== EPISODE CARD ==========
+// ========== CARDS ==========
 function getSummary(notes){
   if(!notes)return '';
   const quotes=[...notes.matchAll(/[""\u201c]([^""\u201d]{15,80})[""\u201d]/g)].map(m=>m[1]);
@@ -638,18 +704,18 @@ function rc(ep){
   const j=ep.job;
   let prog='';
   if(ep.status==='processing'){const pc=j?j.progress:15;const mg=j?j.message:'处理中';prog=`<div class="pb"><div class="pf" style="width:${pc}%"></div></div><div class="pt"><span class="sp"></span>${mg} (${pc}%)</div>`;}
-  const starred=ep.starred?'&#11088;':'&#9734;';
-  return`<div class="ec" id="ep-${ep.id}"><div class="et">
-    ${ep.podcast_artwork?`<img class="ea" src="${ep.podcast_artwork}">`:`<div class="ea">&#127911;</div>`}
-    <div class="ei"><div class="etl">${isAdmin?`<button class="star-btn" onclick="event.stopPropagation();toggleStar(${ep.id})">${starred}</button>`:(ep.starred?'&#11088; ':'')}${ep.title}</div>
+  const starred=ep.starred?'&#9733;':'&#9734;';
+  return`<div class="ec type-podcast" id="ep-${ep.id}"><div class="et">
+    ${ep.podcast_artwork?`<div class="ea"><img src="${ep.podcast_artwork}"></div>`:`<div class="ea">&#127911;</div>`}
+    <div class="ei"><div class="etl">${isAdmin?`<button class="star-btn ${ep.starred?'on':''}" onclick="event.stopPropagation();toggleStar(${ep.id})">${starred}</button>`:(ep.starred?'&#9733; ':'')}${ep.title}</div>
       <div class="em"><span class="pl">${pn}</span>${dt?`<span>${dt}</span>`:''}<span class="st ${sc[ep.status]}">${sl[ep.status]}</span></div>
       ${ep.status==='done'&&ep.notes?`<div class="ed">${getSummary(ep.notes)}</div>`:ep.description?`<div class="ed">${ep.description.replace(/</g,'&lt;')}</div>`:''}${prog}
       <div class="eac">
-        ${ep.status==='new'&&isAdmin?`<button class="bt bp bs" onclick="sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="ut(${ep.id})">&#128196; 手动上传</button><button class="bt bou bs" onclick="us(${ep.id},'skipped')">跳过</button>`:''}
-        ${ep.status==='processing'&&isAdmin?`<button class="bt brd bs" onclick="ab(${ep.id})">&#9724; 终止</button>`:''}
-        ${ep.status==='skipped'&&isAdmin?`<button class="bt bp bs" onclick="sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="ut(${ep.id})">&#128196; 手动上传</button>`:''}
-        ${ep.status==='done'?`<button class="bt bp bs" onclick="od(${ep.id})">&#128196; 查看笔记</button>`:''}
-        ${ep.link?`<a href="${ep.link}" target="_blank" class="bt bou bs" style="text-decoration:none">&#128279;</a>`:''}
+        ${ep.status==='new'&&isAdmin?`<button class="bt bp bs" onclick="event.stopPropagation();sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="event.stopPropagation();ut(${ep.id})">&#128196; 手动上传</button><button class="bt bou bs" onclick="event.stopPropagation();us(${ep.id},'skipped')">跳过</button>`:''}
+        ${ep.status==='processing'&&isAdmin?`<button class="bt brd bs" onclick="event.stopPropagation();ab(${ep.id})">&#9724; 终止</button>`:''}
+        ${ep.status==='skipped'&&isAdmin?`<button class="bt bp bs" onclick="event.stopPropagation();sp(${ep.id})">&#9889; 自动提炼</button>`:''}
+        ${ep.status==='done'?`<button class="bt bp bs" onclick="event.stopPropagation();od(${ep.id})">&#128196; 查看笔记</button>`:''}
+        ${ep.link?`<a href="${ep.link}" target="_blank" class="bt bou bs" onclick="event.stopPropagation()" style="text-decoration:none">&#128279;</a>`:''}
       </div></div></div></div>`;
 }
 
@@ -663,18 +729,18 @@ function rnItem(n){
     const j=n.job||{};const pc=j.progress||15;const mg=j.message||'处理中';
     prog=`<div class="pb"><div class="pf" style="width:${pc}%"></div></div><div class="pt"><span class="sp"></span>${mg} (${pc}%)</div>`;
   }
-  return`<div class="ec" id="note-${n.id}"><div class="et">
+  return`<div class="ec type-${n.source_type||'note'}" id="note-${n.id}"><div class="et">
     <div class="ea">${typeIcon}</div>
     <div class="ei"><div class="etl">${n.title}</div>
-      <div class="em"><span class="src-chip">${typeIcon} ${srcLabel}</span><span class="st ${stCls}">${stLabel}</span></div>
+      <div class="em"><span class="src-chip ${n.source_type}">${typeIcon} ${srcLabel}</span><span class="st ${stCls}">${stLabel}</span></div>
       ${prog}
       <div class="eac">
-        ${n.status==='new'&&isAdmin?`<button class="bt bp bs" onclick="processNote(${n.id})">&#9889; 提炼</button><button class="bt bou bs" onclick="delNote(${n.id})">删除</button>`:''}
-        ${n.status==='processing'&&isAdmin?`<button class="bt brd bs" onclick="abortNote(${n.id})">&#9724; 终止</button>`:''}
+        ${n.status==='new'&&isAdmin?`<button class="bt bp bs" onclick="event.stopPropagation();processNote(${n.id})">&#9889; 提炼</button><button class="bt bou bs" onclick="event.stopPropagation();delNote(${n.id})">删除</button>`:''}
+        ${n.status==='processing'&&isAdmin?`<button class="bt brd bs" onclick="event.stopPropagation();abortNote(${n.id})">&#9724; 终止</button>`:''}
       </div></div></div></div>`;
 }
 
-// Drawer
+// ========== NOTE DRAWER ==========
 function od(id){
   const ep=E.find(e=>e.id===id);if(!ep)return;
   document.getElementById('dt').textContent=ep.title;
@@ -702,15 +768,14 @@ function odn(id){
     bl=`<div class="backlinks"><h3>&#128279; 涉及概念 (${noteTerms.length})</h3>${noteTerms.map(t=>`<div class="bl-item" onclick="scrollToTerm('${t.name.replace(/'/g,"\\'")}')"><div class="bl-term">${t.name}${t.eng?` (${t.eng})`:''}</div><div class="bl-def">${(t.def||'').substring(0,80)}${(t.def||'').length>80?'...':''}</div></div>`).join('')}</div>`;
   }
   document.getElementById('db').innerHTML=html+bl;
-  // Admin actions for notes
   const actions=document.getElementById('dactions');
   if(isAdmin){
     actions.style.display='flex';
     actions.innerHTML=`
       <button class="bt bp bs" onclick="processNote(${id})">&#9889; 重新提炼</button>
-      <button class="bt bou bs" onclick="editNoteTitle(${id})">✎ 编辑标题</button>
-      <button class="bt bou bs" onclick="replaceNoteFile(${id})">⇄ 替换文件</button>
-      <button class="bt bou bs" style="color:var(--rd);border-color:rgba(239,68,68,0.3);" onclick="delNote(${id})">✕ 删除</button>
+      <button class="bt bou bs" onclick="editNoteTitle(${id})">✎ 标题</button>
+      <button class="bt bou bs" onclick="replaceNoteFile(${id})">⇄ 替换</button>
+      <button class="bt brd bs" onclick="delNote(${id})">✕ 删除</button>
     `;
   }else actions.style.display='none';
   document.getElementById('drw').classList.add('open');
@@ -726,7 +791,7 @@ function openToTerm(id,termName){
 }
 function scrollToTerm(name){
   const el=document.querySelector(`.term-hl[data-term="${name}"]`);
-  if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.background='rgba(139,92,246,0.3)';setTimeout(()=>el.style.background='',2000);}
+  if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.background='rgba(167,139,250,0.4)';setTimeout(()=>el.style.background='',2000);}
 }
 
 function hidePop(){document.getElementById('tpop').classList.remove('visible');}
@@ -744,24 +809,26 @@ document.addEventListener('click',e=>{
   }else if(!e.target.closest('.term-pop')){hidePop();}
 });
 
-// Episode actions
+// ========== EPISODE ACTIONS ==========
 async function us(id,s){await api(`/episodes/${id}`,{method:'PATCH',body:JSON.stringify({status:s})});await ld();}
 async function ab(id){await api(`/episodes/${id}/abort`,{method:'POST'});if(PT[id]){clearInterval(PT[id]);delete PT[id];}await ld();}
 async function sp(id){await api(`/episodes/${id}/process`,{method:'POST'});await ld();poll(id);}
 async function toggleStar(id){await api(`/episodes/${id}/star`,{method:'POST'});await ld();}
 async function toggleStarN(id){const n=notes.find(x=>x.id===id);await api(`/notes/${id}`,{method:'PATCH',body:JSON.stringify({starred:n&&n.starred?0:1})});await ld();}
 
-function ut(id){const ep=E.find(e=>e.id===id);document.getElementById('tt').textContent=`逐字稿：${ep.title}`;document.getElementById('ti').value='';document.getElementById('ti').dataset.eid=id;sm('tm');}
-async function st(){const ta=document.getElementById('ti');const t=ta.value.trim();const id=+ta.dataset.eid;if(!t)return;hm('tm');await api(`/episodes/${id}/transcript`,{method:'POST',body:JSON.stringify({transcript:t})});await ld();poll(id);}
+function ut(id){
+  const ep=E.find(e=>e.id===id);
+  const txt=prompt(`粘贴逐字稿：${ep.title}`);
+  if(!txt||!txt.trim())return;
+  api(`/episodes/${id}/transcript`,{method:'POST',body:JSON.stringify({transcript:txt.trim()})}).then(()=>{ld();poll(id);});
+}
 
 function poll(id){if(PT[id])return;PT[id]=setInterval(async()=>{const j=await api(`/jobs/${id}`);if(j.step==='done'||j.step==='error'){clearInterval(PT[id]);delete PT[id];await ld();return;}const c=document.getElementById(`ep-${id}`);if(c){const b=c.querySelector('.pf');const t=c.querySelector('.pt');if(b)b.style.width=j.progress+'%';if(t)t.innerHTML=`<span class="sp"></span>${j.message} (${j.progress}%)`;}},3000);}
 
-// Note actions
+// ========== NOTE ACTIONS ==========
 async function processNote(id){
-  try{
-    await api(`/notes/${id}/process`,{method:'POST'});
-    await ld();pollNote(id);
-  }catch(e){alert('提炼启动失败：'+e.message);}
+  try{await api(`/notes/${id}/process`,{method:'POST'});await ld();pollNote(id);}
+  catch(e){alert('提炼启动失败：'+e.message);}
 }
 async function abortNote(id){
   await api(`/notes/${id}/abort`,{method:'POST'}).catch(()=>{});
@@ -805,39 +872,144 @@ function pollNote(id){
   },3000);
 }
 
-// Parse uploaded file (md/txt/docx)
 async function parseFileContent(file){
   const ext=file.name.split('.').pop().toLowerCase();
   try{
-    if(ext==='md'||ext==='markdown'||ext==='txt'){
-      return await file.text();
-    }else if(ext==='docx'){
-      const arrayBuffer=await file.arrayBuffer();
-      const result=await mammoth.convertToMarkdown({arrayBuffer});
-      return result.value;
-    }else{alert('不支持的格式，请使用 .md / .txt / .docx');return null;}
+    if(ext==='md'||ext==='markdown'||ext==='txt'){return await file.text();}
+    else if(ext==='docx'){const arrayBuffer=await file.arrayBuffer();const result=await mammoth.convertToMarkdown({arrayBuffer});return result.value;}
+    else{alert('不支持的格式');return null;}
   }catch(e){alert('解析失败：'+e.message);return null;}
 }
 
-// Search podcast
-let sT;function ds(){clearTimeout(sT);sT=setTimeout(ss,400);}
-async function ss(){const q=document.getElementById('ps').value.trim();const el=document.getElementById('sr');if(!q){el.innerHTML='';return;}el.innerHTML='<div class="sl">搜索中...</div>';const r=await api(`/search?q=${encodeURIComponent(q)}`);if(!r.length){el.innerHTML='<div class="sl">未找到</div>';return;}el.innerHTML=r.map((x,i)=>`<div class="si" onclick="pss(${i})">${x.artwork?`<img src="${x.artwork}">`:''}<div><div class="sn">${x.name}</div><div class="sa">${x.artist||''} · ${x.episode_count||'?'} 集</div></div></div>`).join('');window._sr=r;}
-async function pss(i){const r=window._sr[i];if(!r)return;hm('am');document.getElementById('ps').value='';document.getElementById('sr').innerHTML='';await api('/podcasts',{method:'POST',body:JSON.stringify({name:r.name,rss_url:r.rss_url||null,artwork:r.artwork||null})});await ld();}
-async function apm(){const n=document.getElementById('pnm').value.trim();const r=document.getElementById('prs').value.trim();if(!n)return;hm('am');await api('/podcasts',{method:'POST',body:JSON.stringify({name:n,rss_url:r||null})});document.getElementById('pnm').value='';document.getElementById('prs').value='';await ld();}
-async function dp(id,nm){if(!confirm(`取消订阅「${nm}」？`))return;await api(`/podcasts/${id}`,{method:'DELETE'});if(CF===id)CF=null;await ld();}
-async function ao(){const t=document.getElementById('ot').value.trim();const l=document.getElementById('ol').value.trim();const d=document.getElementById('od').value.trim();if(!t)return;hm('om');await api('/episodes/oneoff',{method:'POST',body:JSON.stringify({title:t,link:l||null,description:d||null})});document.getElementById('ot').value='';document.getElementById('ol').value='';document.getElementById('od').value='';await ld();}
-async function rf(b){b.disabled=true;b.textContent='...';const r=await api('/refresh',{method:'POST'});b.disabled=false;b.innerHTML='&#8635; 刷新';await ld();if(r.new_episodes>0)alert(`发现 ${r.new_episodes} 个新剧集！`);}
-
-// Lark modal
-function openLarkModal(){
-  _selectedLark=null;
-  document.getElementById('lark-q').value='';
-  document.getElementById('lark-sr').innerHTML='';
-  document.getElementById('lark-btn').disabled=true;
-  document.getElementById('lark-btn').textContent='先选择文档';
-  populateSkillSelect('lark-skill','lark-skill-desc');
-  sm('larkm');setTimeout(()=>document.getElementById('lark-q').focus(),80);
+// ========== SOURCE DRAWER ==========
+function openSrc(type){
+  window._openSrc=type;
+  const titles={podcast:'播客订阅',lark:'飞书文档',note:'上传笔记'};
+  document.getElementById('sdt').textContent=titles[type]||'来源';
+  renderSrc(type);
+  document.getElementById('sdrw').classList.add('open');
+  document.getElementById('sdov').classList.add('open');
 }
+function closeSrc(){window._openSrc=null;document.getElementById('sdrw').classList.remove('open');document.getElementById('sdov').classList.remove('open');}
+
+function renderSrc(type){
+  const b=document.getElementById('sdb');
+  if(!isAdmin){b.innerHTML='<div class="emp"><div class="ic">&#128274;</div><h3>需要登录</h3><p style="margin-top:8px;"><button class="bt bp" onclick="showLoginModal()">登录</button></p></div>';return;}
+  if(type==='podcast')b.innerHTML=renderPodcastSrc();
+  else if(type==='lark')b.innerHTML=renderLarkSrc();
+  else if(type==='note')b.innerHTML=renderNoteSrc();
+}
+
+function renderPodcastSrc(){
+  const subs=P.filter(p=>p.name!=='_散装收藏');
+  const pend=E.filter(e=>e.status==='new'||e.status==='processing');
+  return`
+    <div class="src-section">
+      <h4>我的订阅 · ${subs.length}</h4>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${subs.map(p=>`<div class="sub-chip">
+          ${p.artwork?`<img src="${p.artwork}">`:'<span style="width:24px;text-align:center;">🎙</span>'}
+          ${p.name}${p.new_count>0?` <span class="nbadge">${p.new_count}</span>`:''}
+          <button class="x" onclick="dp(${p.id},'${p.name.replace(/'/g,"\\'")}')">✕</button>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="src-section">
+      <h4>添加新订阅</h4>
+      <input class="src-input" id="ps" placeholder="搜索播客名称..." oninput="ds()">
+      <div class="srs" id="sr"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+        <button class="bt bou" style="flex:1;" onclick="addManual()">&#9997; 手动填写</button>
+        <button class="bt bou" style="flex:1;" onclick="addOneoff()">&#128279; 喂入单集</button>
+      </div>
+    </div>
+    <div class="src-section">
+      <h4>
+        <span>&#9889; 处理中 · ${pend.length}</span>
+        <button class="bt bou bs" style="float:right;margin-top:-4px;" onclick="doRefresh(this)">&#8635; 刷新 RSS</button>
+      </h4>
+      <div class="el">${pend.length?pend.map(rc).join(''):'<div class="sl">暂无待处理剧集</div>'}</div>
+    </div>`;
+}
+
+function renderLarkSrc(){
+  const nonPod=skills.filter(s=>s.category!=='podcast');
+  return`
+    <div class="src-section">
+      <h4>搜索飞书文档</h4>
+      <input class="src-input" id="lark-q" placeholder="输入关键词..." oninput="dsLark()">
+      <div class="srs" id="lark-sr"></div>
+    </div>
+    <div class="src-section">
+      <h4>选择提炼 Skill</h4>
+      <select class="src-input" id="lark-skill" onchange="document.getElementById('lark-skill-desc').textContent=(skills.find(s=>s.id===parseInt(this.value))||{}).description||''">
+        ${nonPod.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+      <div id="lark-skill-desc" style="font-size:10px;color:var(--ink3);margin-top:6px;">${nonPod[0]?.description||''}</div>
+    </div>
+    <div class="src-section">
+      <button class="bt bp" style="width:100%;padding:13px;font-size:13px;" id="lark-btn" onclick="addLark()" disabled>先选择文档</button>
+    </div>`;
+}
+
+function renderNoteSrc(){
+  const nonPod=skills.filter(s=>s.category!=='podcast');
+  return`
+    <div class="src-section">
+      <h4>上传文件（可选）</h4>
+      <input type="file" id="note-file" accept=".md,.txt,.markdown,.docx" onchange="handleNoteFile(event)" class="src-input" style="padding:10px;">
+      <div style="font-size:10px;color:var(--ink3);margin-top:6px;">.md / .txt / .docx · docx 自动转换</div>
+    </div>
+    <div class="src-section">
+      <h4>标题</h4>
+      <input class="src-input" id="note-title" placeholder="笔记标题">
+    </div>
+    <div class="src-section">
+      <h4>内容（可直接编辑）</h4>
+      <textarea class="src-input src-textarea" id="note-content" placeholder="从文件解析或直接粘贴 markdown..."></textarea>
+    </div>
+    <div class="src-section">
+      <h4>选择提炼 Skill</h4>
+      <select class="src-input" id="note-skill" onchange="document.getElementById('note-skill-desc').textContent=(skills.find(s=>s.id===parseInt(this.value))||{}).description||''">
+        ${nonPod.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+      <div id="note-skill-desc" style="font-size:10px;color:var(--ink3);margin-top:6px;">${nonPod[0]?.description||''}</div>
+    </div>
+    <div class="src-section">
+      <button class="bt bp" style="width:100%;padding:13px;font-size:13px;" onclick="addNote()">&#9889; 添加并提炼</button>
+    </div>`;
+}
+
+// Podcast search in drawer
+function ds(){clearTimeout(_sT);_sT=setTimeout(ss,400);}
+async function ss(){
+  const q=document.getElementById('ps').value.trim();const el=document.getElementById('sr');
+  if(!q){el.innerHTML='';return;}
+  el.innerHTML='<div class="sl">搜索中...</div>';
+  const r=await api(`/search?q=${encodeURIComponent(q)}`);
+  if(!r.length){el.innerHTML='<div class="sl">未找到</div>';return;}
+  el.innerHTML=r.map((x,i)=>`<div class="si" onclick="pss(${i})">${x.artwork?`<img src="${x.artwork}">`:'<div class="iph">🎙</div>'}<div><div class="sn">${x.name}</div><div class="sa">${x.artist||''} · ${x.episode_count||'?'} 集</div></div></div>`).join('');
+  window._sr=r;
+}
+async function pss(i){
+  const r=window._sr[i];if(!r)return;
+  await api('/podcasts',{method:'POST',body:JSON.stringify({name:r.name,rss_url:r.rss_url||null,artwork:r.artwork||null})});
+  await ld();
+}
+function addManual(){
+  const n=prompt('播客名称');if(!n)return;
+  const u=prompt('RSS 链接（可选）','');
+  api('/podcasts',{method:'POST',body:JSON.stringify({name:n,rss_url:u||null})}).then(()=>ld());
+}
+function addOneoff(){
+  const t=prompt('单集标题');if(!t)return;
+  const l=prompt('链接（可选）','');
+  api('/episodes/oneoff',{method:'POST',body:JSON.stringify({title:t,link:l||null,description:null})}).then(()=>ld());
+}
+async function dp(id,nm){if(!confirm(`取消订阅「${nm}」？`))return;await api(`/podcasts/${id}`,{method:'DELETE'});if(CF===id)CF=null;await ld();}
+async function doRefresh(b){b.disabled=true;b.textContent='...';const r=await api('/refresh',{method:'POST'});b.disabled=false;b.innerHTML='&#8635; 刷新 RSS';await ld();if(r.new_episodes>0)alert(`发现 ${r.new_episodes} 个新剧集！`);}
+
+// Lark drawer
 function dsLark(){clearTimeout(_larkTimer);_larkTimer=setTimeout(doLarkSearch,500);}
 async function doLarkSearch(){
   const q=document.getElementById('lark-q').value.trim();
@@ -854,33 +1026,23 @@ async function doLarkSearch(){
 function selLark(i){
   _selectedLark=window._larkSr[i];
   document.querySelectorAll('#lark-sr .si').forEach((el,j)=>el.classList.toggle('sel',j===i));
-  document.getElementById('lark-btn').disabled=false;
-  document.getElementById('lark-btn').textContent='⚡ 添加并提炼';
+  const btn=document.getElementById('lark-btn');
+  btn.disabled=false;btn.innerHTML='&#9889; 添加并提炼';
 }
 async function addLark(){
   if(!_selectedLark)return;
   const skillId=parseInt(document.getElementById('lark-skill').value)||null;
-  hm('larkm');
+  const selected=_selectedLark;_selectedLark=null;
+  closeSrc();
   const r=await api('/notes',{method:'POST',body:JSON.stringify({
-    source_type:'lark',
-    source_ref:_selectedLark.token,
-    title:_selectedLark.title,
-    skill_id:skillId,
-    metadata:{lark_token:_selectedLark.token,lark_type:_selectedLark.type,lark_url:_selectedLark.url||''}
+    source_type:'lark',source_ref:selected.token,title:selected.title,skill_id:skillId,
+    metadata:{lark_token:selected.token,lark_type:selected.type,lark_url:selected.url||''}
   })});
-  _selectedLark=null;
   await ld();
   if(r&&r.id){await processNote(r.id);}
 }
 
-// Upload note modal
-function openNoteModal(){
-  document.getElementById('note-title').value='';
-  document.getElementById('note-content').value='';
-  document.getElementById('note-file').value='';
-  populateSkillSelect('note-skill','note-skill-desc');
-  sm('notem');setTimeout(()=>document.getElementById('note-file').focus(),80);
-}
+// Note drawer
 async function handleNoteFile(event){
   const file=event.target.files[0];if(!file)return;
   const base=file.name.replace(/\.[^.]+$/,'');
@@ -894,35 +1056,19 @@ async function addNote(){
   const content=document.getElementById('note-content').value.trim();
   const skillId=parseInt(document.getElementById('note-skill').value)||null;
   if(!title||!content){alert('标题和内容不能为空');return;}
-  hm('notem');
+  closeSrc();
   const r=await api('/notes',{method:'POST',body:JSON.stringify({
-    source_type:'note',
-    title,
-    raw_content:content,
-    skill_id:skillId,
-    metadata:{}
+    source_type:'note',title,raw_content:content,skill_id:skillId,metadata:{}
   })});
   await ld();
   if(r&&r.id){await processNote(r.id);}
 }
 
-function populateSkillSelect(selId,descId){
-  const sel=document.getElementById(selId);
-  const nonPod=skills.filter(s=>s.category!=='podcast');
-  sel.innerHTML=nonPod.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-  sel.onchange=()=>{
-    const s=nonPod.find(x=>x.id===parseInt(sel.value));
-    if(descId)document.getElementById(descId).textContent=s?s.description||'':'';
-  };
-  sel.onchange();
-}
-
 function sm(id){document.getElementById(id).classList.add('vis');}
 function hm(id){document.getElementById(id).classList.remove('vis');}
-function showAdd(){sm('am');setTimeout(()=>document.getElementById('ps').focus(),80);}
 
 ld();setInterval(ld,300000);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){cd();hidePop();document.querySelectorAll('.mb.vis').forEach(m=>m.classList.remove('vis'));}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){cd();closeSrc();hidePop();document.querySelectorAll('.mb.vis').forEach(m=>m.classList.remove('vis'));}});
 </script>
 </body>
 </html>
