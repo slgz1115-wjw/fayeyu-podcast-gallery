@@ -412,6 +412,42 @@ db.exec(`CREATE TABLE IF NOT EXISTS notes (
   updated_at TEXT DEFAULT (datetime('now'))
 )`);
 
+db.exec(`CREATE TABLE IF NOT EXISTS comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  target_type TEXT NOT NULL,
+  target_id INTEGER NOT NULL,
+  quote TEXT NOT NULL,
+  occurrence INTEGER DEFAULT 0,
+  comment TEXT,
+  color TEXT DEFAULT 'yellow',
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+app.get('/api/comments', (req, res) => {
+  const { target_type, target_id } = req.query;
+  if (!target_type || !target_id) return res.json([]);
+  const rows = db.prepare('SELECT * FROM comments WHERE target_type=? AND target_id=? ORDER BY id ASC').all(target_type, parseInt(target_id));
+  res.json(rows);
+});
+app.post('/api/comments', requireAdmin, (req, res) => {
+  const { target_type, target_id, quote, occurrence, comment, color } = req.body;
+  if (!target_type || !target_id || !quote) return res.status(400).json({ error: 'missing fields' });
+  const info = db.prepare('INSERT INTO comments (target_type, target_id, quote, occurrence, comment, color) VALUES (?,?,?,?,?,?)').run(
+    target_type, parseInt(target_id), quote, occurrence || 0, comment || '', color || 'yellow'
+  );
+  res.json({ id: info.lastInsertRowid, ok: true });
+});
+app.patch('/api/comments/:id', requireAdmin, (req, res) => {
+  const { comment, color } = req.body;
+  if (comment !== undefined) db.prepare('UPDATE comments SET comment=? WHERE id=?').run(comment, req.params.id);
+  if (color !== undefined) db.prepare('UPDATE comments SET color=? WHERE id=?').run(color, req.params.id);
+  res.json({ ok: true });
+});
+app.delete('/api/comments/:id', requireAdmin, (req, res) => {
+  db.prepare('DELETE FROM comments WHERE id=?').run(req.params.id);
+  res.json({ ok: true });
+});
+
 app.get('/api/notes', (req, res) => {
   const { source_type, status } = req.query;
   let sql = 'SELECT * FROM notes WHERE 1=1';

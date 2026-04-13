@@ -229,6 +229,44 @@ body::before{
 .dbody tr:last-child td{border-bottom:none;}
 .dbody tr:hover td{background:rgba(255,255,255,0.02);}
 
+/* Maximize drawer */
+.drw.max{width:100vw;max-width:100vw;}
+.drw.max .dbody{max-width:960px;margin:0 auto;}
+.dh-tools{display:flex;gap:6px;align-items:center;}
+.dh-tools .icon-btn{background:none;border:1px solid var(--line2);color:var(--ink3);padding:5px 10px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;}
+.dh-tools .icon-btn:hover{color:var(--o);border-color:var(--o);}
+
+/* Contenteditable edit mode */
+.dbody[contenteditable="true"]{outline:none;border:1px dashed rgba(255,106,0,0.4);border-radius:10px;padding:24px 28px;background:rgba(255,106,0,0.02);}
+.dbody[contenteditable="true"]:focus{border-color:var(--o);}
+
+/* Comment highlights */
+.cmt-hl{padding:1px 2px;border-radius:2px;cursor:pointer;position:relative;transition:filter 0.15s;}
+.cmt-hl:hover{filter:brightness(1.15);}
+.cmt-hl[data-color="yellow"]{background:rgba(251,191,36,0.28);box-shadow:inset 0 -2px 0 rgba(251,191,36,0.6);}
+.cmt-hl[data-color="orange"]{background:rgba(255,106,0,0.22);box-shadow:inset 0 -2px 0 rgba(255,106,0,0.6);}
+.cmt-hl[data-color="purple"]{background:rgba(167,139,250,0.22);box-shadow:inset 0 -2px 0 rgba(167,139,250,0.6);}
+.cmt-hl[data-color="green"]{background:rgba(74,222,128,0.22);box-shadow:inset 0 -2px 0 rgba(74,222,128,0.6);}
+.cmt-hl[data-color="red"]{background:rgba(248,113,113,0.22);box-shadow:inset 0 -2px 0 rgba(248,113,113,0.6);}
+
+/* Selection toolbar */
+.sel-tb{position:fixed;z-index:350;background:var(--bg3);border:1px solid var(--line2);border-radius:10px;padding:6px;display:none;box-shadow:0 12px 40px rgba(0,0,0,0.5);gap:4px;align-items:center;}
+.sel-tb.visible{display:flex;}
+.sel-tb .clr{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.15s;}
+.sel-tb .clr:hover{transform:scale(1.15);}
+.sel-tb .clr.act{border-color:var(--ink);}
+.sel-tb button{background:none;border:none;color:var(--ink);cursor:pointer;padding:6px 12px;border-radius:6px;font-size:12px;font-family:inherit;}
+.sel-tb button:hover{background:rgba(255,255,255,0.08);}
+.sel-tb .sep{width:1px;height:16px;background:var(--line2);margin:0 4px;}
+
+/* Comment popover */
+.cmt-pop{position:fixed;z-index:350;background:var(--bg3);border:1px solid var(--line2);border-radius:12px;padding:14px 16px;max-width:340px;min-width:240px;box-shadow:0 20px 50px rgba(0,0,0,0.6);display:none;}
+.cmt-pop.visible{display:block;}
+.cmt-pop .cmt-quote{font-size:10px;color:var(--ink3);font-style:italic;padding:6px 10px;border-left:2px solid var(--o);background:rgba(255,255,255,0.02);margin-bottom:10px;line-height:1.55;max-height:60px;overflow:hidden;}
+.cmt-pop textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--line2);border-radius:7px;padding:9px 11px;color:var(--ink);font-family:inherit;font-size:12px;line-height:1.6;resize:vertical;min-height:60px;}
+.cmt-pop textarea:focus{outline:none;border-color:var(--o);}
+.cmt-pop .cmt-actions{display:flex;gap:6px;margin-top:10px;justify-content:flex-end;}
+
 .term-hl{background:linear-gradient(to bottom,transparent 62%,rgba(167,139,250,0.22) 62%);cursor:pointer;font-weight:500;border-bottom:1px dashed rgba(167,139,250,0.5);color:var(--ink);}
 .term-pop{position:fixed;z-index:300;background:var(--bg3);border:1px solid rgba(167,139,250,0.3);border-radius:12px;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,0.6);max-width:360px;min-width:260px;display:none;}
 .term-pop.visible{display:block;}
@@ -358,9 +396,37 @@ body::before{
 <!-- Note drawer (markdown viewer) -->
 <div class="dov" id="dov" onclick="cd()"></div>
 <div class="drw" id="drw">
-  <div class="dh"><h3 id="dt">笔记</h3><button class="dc" onclick="cd()">&#10005;</button></div>
+  <div class="dh">
+    <h3 id="dt">笔记</h3>
+    <div class="dh-tools">
+      <button class="icon-btn" id="max-btn" onclick="toggleMax()" title="放大 / 恢复">&#9974;</button>
+      <button class="dc" onclick="cd()">&#10005;</button>
+    </div>
+  </div>
   <div class="dbody" id="db"></div>
   <div class="dactions" id="dactions" style="display:none;"></div>
+</div>
+
+<!-- Selection toolbar -->
+<div class="sel-tb" id="seltb">
+  <button onclick="addCommentFromSelection()">&#128172; 评论</button>
+  <div class="sep"></div>
+  <div class="clr act" data-color="yellow" style="background:#FBBF24;" onclick="setSelColor('yellow')"></div>
+  <div class="clr" data-color="orange" style="background:#FF6A00;" onclick="setSelColor('orange')"></div>
+  <div class="clr" data-color="purple" style="background:#A78BFA;" onclick="setSelColor('purple')"></div>
+  <div class="clr" data-color="green" style="background:#4ADE80;" onclick="setSelColor('green')"></div>
+  <div class="clr" data-color="red" style="background:#F87171;" onclick="setSelColor('red')"></div>
+</div>
+
+<!-- Comment popover -->
+<div class="cmt-pop" id="cmtpop">
+  <div class="cmt-quote" id="cmt-quote"></div>
+  <textarea id="cmt-text" placeholder="写下你的想法..."></textarea>
+  <div class="cmt-actions">
+    <button class="bt brd bs" id="cmt-del" onclick="deleteComment()" style="display:none;">删除</button>
+    <button class="bt bou bs" onclick="closeCmtPop()">取消</button>
+    <button class="bt bp bs" onclick="saveComment()">保存</button>
+  </div>
 </div>
 
 <!-- Source drawer (3 pills) -->
@@ -778,94 +844,256 @@ function rnItem(n){
       </div></div></div></div>`;
 }
 
-// ========== NOTE DRAWER ==========
-function od(id){
-  const ep=E.find(e=>e.id===id);if(!ep)return;
-  document.getElementById('dt').textContent=ep.title;
-  const raw=cleanMammothEscapes(ep.notes||'*暂无*');
-  let html=marked.parse(raw);
-  html=highlightTerms(html);
-  const epTerms=Object.values(termDB).filter(t=>(t.episodes||[]).find(e=>e.id===id));
-  let bl='';
-  if(epTerms.length){
-    bl=`<div class="backlinks"><h3>&#128279; 本集涉及的核心概念 (${epTerms.length})</h3>${epTerms.map(t=>`<div class="bl-item" onclick="scrollToTerm('${t.name.replace(/'/g,"\\'")}')"><div class="bl-term">${t.name}${t.eng?` (${t.eng})`:''}</div><div class="bl-def">${(t.def||'').substring(0,80)}${(t.def||'').length>80?'...':''}</div></div>`).join('')}</div>`;
-  }
-  document.getElementById('db').innerHTML=html+bl;
-  const actions=document.getElementById('dactions');
-  if(isAdmin&&ep.notes){
-    actions.style.display='flex';
-    actions.innerHTML=`<button class="bt bp bs" onclick="beginEditEp(${id})">&#9998; 编辑笔记</button>`;
-  }else actions.style.display='none';
+// ========== NOTE/EPISODE DRAWER (unified) ==========
+// _cur = {type:'ep'|'note', id:number, comments:[], selColor:'yellow', editing:false, pendingSel:null}
+let _cur=null;
+
+function od(id){openDrawer('ep',id);}
+function odn(id){openDrawer('note',id);}
+
+async function openDrawer(type,id){
+  const t=type==='ep'?E.find(e=>e.id===id):notes.find(x=>x.id===id);
+  if(!t)return;
+  _cur={type,id,comments:[],selColor:'yellow',editing:false};
+  document.getElementById('dt').textContent=type==='ep'?t.title:t.title;
   document.getElementById('drw').classList.add('open');
   document.getElementById('dov').classList.add('open');
-}
-function beginEditEp(id){
-  const ep=E.find(e=>e.id===id);if(!ep)return;
-  const body=document.getElementById('db');
-  body.innerHTML=`<textarea id="ep-edit-ta" style="width:100%;min-height:62vh;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;color:var(--ink);resize:vertical;">${(ep.notes||'').replace(/</g,'&lt;')}</textarea>`;
-  const actions=document.getElementById('dactions');
-  actions.innerHTML=`<button class="bt bp bs" onclick="saveEditEp(${id})">&#128190; 保存</button><button class="bt bou bs" onclick="od(${id})">取消</button>`;
-}
-async function saveEditEp(id){
-  const ta=document.getElementById('ep-edit-ta');if(!ta)return;
-  try{
-    await api(`/episodes/${id}`,{method:'PATCH',body:JSON.stringify({notes:ta.value})});
-    await ld();od(id);
-  }catch(e){alert('保存失败：'+e.message);}
+  await loadComments();
+  renderDrawerBody();
 }
 
-function odn(id){
-  const n=notes.find(x=>x.id===id);if(!n)return;
-  document.getElementById('dt').textContent=n.title;
-  const raw=cleanMammothEscapes(n.content||n.raw_content||'*暂无内容*');
-  let html=marked.parse(raw);
+async function loadComments(){
+  if(!_cur)return;
+  const tt=_cur.type==='ep'?'episode':'note';
+  try{_cur.comments=await api(`/comments?target_type=${tt}&target_id=${_cur.id}`);}
+  catch(e){_cur.comments=[];}
+}
+
+function renderDrawerBody(){
+  if(!_cur)return;
+  const body=document.getElementById('db');
+  body.removeAttribute('contenteditable');
+  _cur.editing=false;
+  const item=_cur.type==='ep'?E.find(e=>e.id===_cur.id):notes.find(x=>x.id===_cur.id);
+  if(!item){body.innerHTML='<div class="emp">已删除</div>';return;}
+  const mdSrc=_cur.type==='ep'?(item.notes||'*暂无*'):(item.content||item.raw_content||'*暂无内容*');
+  let html=marked.parse(cleanMammothEscapes(mdSrc));
   html=highlightTerms(html);
-  const noteTerms=Object.values(termDB).filter(t=>(t.episodes||[]).find(e=>e.id==='n'+id));
+
+  // Backlinks: concepts this note touches
+  const keyId=_cur.type==='ep'?_cur.id:('n'+_cur.id);
+  const targetTerms=Object.values(termDB).filter(t=>(t.episodes||[]).find(e=>e.id===keyId));
   let bl='';
-  if(noteTerms.length){
-    bl=`<div class="backlinks"><h3>&#128279; 涉及概念 (${noteTerms.length})</h3>${noteTerms.map(t=>`<div class="bl-item" onclick="scrollToTerm('${t.name.replace(/'/g,"\\'")}')"><div class="bl-term">${t.name}${t.eng?` (${t.eng})`:''}</div><div class="bl-def">${(t.def||'').substring(0,80)}${(t.def||'').length>80?'...':''}</div></div>`).join('')}</div>`;
+  if(targetTerms.length){
+    bl=`<div class="backlinks"><h3>&#128279; 涉及概念 (${targetTerms.length})</h3>${targetTerms.map(t=>`<div class="bl-item" onclick="scrollToTerm('${t.name.replace(/'/g,"\\'")}')"><div class="bl-term">${t.name}${t.eng?` (${t.eng})`:''}</div><div class="bl-def">${(t.def||'').substring(0,80)}${(t.def||'').length>80?'...':''}</div></div>`).join('')}</div>`;
   }
-  document.getElementById('db').innerHTML=html+bl;
-  document.getElementById('db').dataset.noteId=id;
+  body.innerHTML=`<div id="db-content">${html}</div>${bl}`;
+
+  // Apply comment highlights into #db-content only
+  applyCommentHighlights(document.getElementById('db-content'),_cur.comments);
+
+  // Actions bar
   const actions=document.getElementById('dactions');
   if(isAdmin){
     actions.style.display='flex';
-    actions.innerHTML=`
-      <button class="bt bp bs" onclick="beginEditNote(${id})">&#9998; 编辑内容</button>
-      <button class="bt bou bs" onclick="processNote(${id})">&#9889; 重新提炼</button>
-      <button class="bt bou bs" onclick="editNoteTitle(${id})">&#9998; 标题</button>
-      <button class="bt bou bs" onclick="replaceNoteFile(${id})">&#8644; 替换</button>
-      <button class="bt brd bs" onclick="delNote(${id})">&#10005; 删除</button>
-    `;
+    if(_cur.type==='note'){
+      actions.innerHTML=`
+        <button class="bt bp bs" onclick="beginInlineEdit()">&#9998; 编辑内容</button>
+        <button class="bt bou bs" onclick="processNote(${_cur.id})">&#9889; 重新提炼</button>
+        <button class="bt bou bs" onclick="editNoteTitle(${_cur.id})">&#9998; 标题</button>
+        <button class="bt bou bs" onclick="replaceNoteFile(${_cur.id})">&#8644; 替换</button>
+        <button class="bt brd bs" onclick="delNote(${_cur.id})">&#10005; 删除</button>`;
+    }else{
+      const ep=item;
+      actions.innerHTML=ep.notes?`<button class="bt bp bs" onclick="beginInlineEdit()">&#9998; 编辑笔记</button>`:'';
+    }
   }else actions.style.display='none';
-  document.getElementById('drw').classList.add('open');
-  document.getElementById('dov').classList.add('open');
 }
 
-function beginEditNote(id){
-  const n=notes.find(x=>x.id===id);if(!n)return;
-  const body=document.getElementById('db');
-  const current=n.content||n.raw_content||'';
-  body.innerHTML=`<textarea id="note-edit-ta" style="width:100%;min-height:62vh;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;color:var(--ink);resize:vertical;">${current.replace(/</g,'&lt;')}</textarea>
-  <div style="font-size:10px;color:var(--ink3);margin-top:8px;">直接编辑 markdown，保存后立即生效。重新提炼会覆盖当前内容。</div>`;
-  const actions=document.getElementById('dactions');
-  actions.innerHTML=`
-    <button class="bt bp bs" onclick="saveEditNote(${id})">&#128190; 保存</button>
-    <button class="bt bou bs" onclick="odn(${id})">取消</button>
-  `;
+function cd(){
+  document.getElementById('drw').classList.remove('open');
+  document.getElementById('dov').classList.remove('open');
+  document.getElementById('drw').classList.remove('max');
+  hidePop();hideSelTb();closeCmtPop();
+  _cur=null;
 }
-async function saveEditNote(id){
-  const ta=document.getElementById('note-edit-ta');
-  if(!ta)return;
-  const newContent=ta.value;
+
+function toggleMax(){document.getElementById('drw').classList.toggle('max');}
+
+// ---------- Inline editing (contenteditable + htmlToMd on save) ----------
+function beginInlineEdit(){
+  if(!_cur)return;
+  _cur.editing=true;
+  const body=document.getElementById('db');
+  // Remove backlinks from view while editing; keep only content area editable
+  const c=document.getElementById('db-content');
+  if(c){
+    // Strip existing term/comment highlights before editing to avoid polluting the markdown
+    c.querySelectorAll('.term-hl,.cmt-hl').forEach(el=>{
+      const txt=document.createTextNode(el.textContent);el.parentNode.replaceChild(txt,el);
+    });
+  }
+  body.setAttribute('contenteditable','true');
+  body.focus();
+  const actions=document.getElementById('dactions');
+  actions.innerHTML=`<button class="bt bp bs" onclick="saveInlineEdit()">&#128190; 保存</button><button class="bt bou bs" onclick="cancelInlineEdit()">取消</button>`;
+}
+
+function cancelInlineEdit(){renderDrawerBody();}
+
+async function saveInlineEdit(){
+  if(!_cur)return;
+  const c=document.getElementById('db-content');
+  if(!c){renderDrawerBody();return;}
+  const md=htmlToMd(c.innerHTML);
   try{
-    await api(`/notes/${id}`,{method:'PATCH',body:JSON.stringify({content:newContent,status:'done'})});
+    if(_cur.type==='ep'){
+      await api(`/episodes/${_cur.id}`,{method:'PATCH',body:JSON.stringify({notes:md})});
+    }else{
+      await api(`/notes/${_cur.id}`,{method:'PATCH',body:JSON.stringify({content:md,status:'done'})});
+    }
     await ld();
-    odn(id);
+    renderDrawerBody();
   }catch(e){alert('保存失败：'+e.message);}
 }
 
-function cd(){document.getElementById('drw').classList.remove('open');document.getElementById('dov').classList.remove('open');hidePop();}
+// ---------- Comment highlights ----------
+function applyCommentHighlights(root,comments){
+  if(!root||!comments||!comments.length)return;
+  for(const c of comments){
+    try{
+      const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement.closest('.cmt-hl')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+      let n,count=0,wrapped=false;
+      while((n=walker.nextNode())){
+        const idx=n.data.indexOf(c.quote);
+        if(idx<0)continue;
+        if(count===(c.occurrence||0)){
+          const range=document.createRange();
+          range.setStart(n,idx);
+          range.setEnd(n,idx+c.quote.length);
+          const mark=document.createElement('mark');
+          mark.className='cmt-hl';
+          mark.dataset.cid=c.id;
+          mark.dataset.color=c.color||'yellow';
+          mark.title=c.comment||'';
+          try{range.surroundContents(mark);wrapped=true;break;}catch(e){break;}
+        }
+        count++;
+      }
+    }catch(e){}
+  }
+}
+
+// ---------- Selection toolbar ----------
+function hideSelTb(){document.getElementById('seltb').classList.remove('visible');}
+function setSelColor(c){
+  if(_cur)_cur.selColor=c;
+  document.querySelectorAll('#seltb .clr').forEach(el=>el.classList.toggle('act',el.dataset.color===c));
+}
+
+document.addEventListener('mouseup',e=>{
+  if(!_cur||_cur.editing)return;
+  if(!isAdmin){hideSelTb();return;}
+  const body=document.getElementById('db-content');
+  if(!body||!body.contains(e.target)){hideSelTb();return;}
+  setTimeout(()=>{
+    const sel=window.getSelection();
+    if(!sel||sel.rangeCount===0||sel.isCollapsed){hideSelTb();return;}
+    const text=sel.toString().trim();
+    if(!text||text.length<2){hideSelTb();return;}
+    // Only accept if selection is inside body
+    const r=sel.getRangeAt(0);
+    if(!body.contains(r.commonAncestorContainer)){hideSelTb();return;}
+    // Compute occurrence index within body text
+    const full=body.textContent;
+    let occ=0;
+    const pre=getPreSelectionText(body,r);
+    let search=-1;
+    while((search=full.indexOf(text,search+1))!==-1){
+      if(search>=pre.length)break;
+      occ++;
+    }
+    const rect=r.getBoundingClientRect();
+    const tb=document.getElementById('seltb');
+    tb.classList.add('visible');
+    const tbRect=tb.getBoundingClientRect();
+    tb.style.top=(rect.top-tbRect.height-8+window.scrollY)+'px';
+    tb.style.left=Math.max(12,Math.min(window.innerWidth-tbRect.width-12,rect.left+rect.width/2-tbRect.width/2))+'px';
+    _cur.pendingSel={text,occurrence:occ};
+  },10);
+});
+
+function getPreSelectionText(root,range){
+  const pre=range.cloneRange();
+  pre.selectNodeContents(root);
+  pre.setEnd(range.startContainer,range.startOffset);
+  return pre.toString();
+}
+
+function addCommentFromSelection(){
+  if(!_cur||!_cur.pendingSel)return;
+  hideSelTb();
+  openCmtPop({quote:_cur.pendingSel.text,occurrence:_cur.pendingSel.occurrence,color:_cur.selColor,comment:''});
+}
+
+// ---------- Comment popover ----------
+let _editingCmt=null;
+function openCmtPop(c){
+  _editingCmt=c;
+  const pop=document.getElementById('cmtpop');
+  document.getElementById('cmt-quote').textContent='「'+c.quote+'」';
+  document.getElementById('cmt-text').value=c.comment||'';
+  document.getElementById('cmt-del').style.display=c.id?'':'none';
+  pop.classList.add('visible');
+  // Position near center of drawer
+  const drw=document.getElementById('drw').getBoundingClientRect();
+  pop.style.top=Math.max(80,drw.top+80)+'px';
+  pop.style.left=(drw.left+drw.width/2-170)+'px';
+  document.getElementById('cmt-text').focus();
+}
+function closeCmtPop(){document.getElementById('cmtpop').classList.remove('visible');_editingCmt=null;}
+async function saveComment(){
+  if(!_editingCmt||!_cur)return;
+  const text=document.getElementById('cmt-text').value;
+  const tt=_cur.type==='ep'?'episode':'note';
+  try{
+    if(_editingCmt.id){
+      await api(`/comments/${_editingCmt.id}`,{method:'PATCH',body:JSON.stringify({comment:text,color:_editingCmt.color})});
+    }else{
+      await api('/comments',{method:'POST',body:JSON.stringify({
+        target_type:tt,target_id:_cur.id,
+        quote:_editingCmt.quote,occurrence:_editingCmt.occurrence,
+        comment:text,color:_editingCmt.color
+      })});
+    }
+    closeCmtPop();
+    await loadComments();
+    renderDrawerBody();
+  }catch(e){alert('保存评论失败：'+e.message);}
+}
+async function deleteComment(){
+  if(!_editingCmt||!_editingCmt.id)return;
+  if(!confirm('删除这条评论和高亮？'))return;
+  await api(`/comments/${_editingCmt.id}`,{method:'DELETE'});
+  closeCmtPop();
+  await loadComments();
+  renderDrawerBody();
+}
+
+// Click on existing highlight → open edit popover
+document.addEventListener('click',e=>{
+  const hl=e.target.closest('.cmt-hl');
+  if(hl&&_cur&&!_cur.editing){
+    e.stopPropagation();
+    const cid=parseInt(hl.dataset.cid);
+    const c=_cur.comments.find(x=>x.id===cid);
+    if(c){openCmtPop({...c});}
+    return;
+  }
+  if(!e.target.closest('.cmt-pop')&&!e.target.closest('.cmt-hl')){
+    // Don't auto-close if user clicks inside popover
+  }
+});
 
 function openToTerm(id,termName){
   if(typeof id==='string'&&id.startsWith('n'))odn(parseInt(id.slice(1)));
