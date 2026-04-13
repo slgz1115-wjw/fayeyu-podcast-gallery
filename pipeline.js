@@ -213,7 +213,7 @@ function extractWithPrompt(prompt) {
     const body = JSON.stringify({
       model: 'deepseek-chat',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 8000,
+      max_tokens: 8192,
       temperature: 0.3,
     });
     const req = https.request({

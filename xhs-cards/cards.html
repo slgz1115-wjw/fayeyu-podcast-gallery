@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans SC',sans-serif;background:#111;}
+
+.card{width:1080px;height:1440px;position:relative;overflow:hidden;margin:40px auto;border-radius:24px;}
+
+/* Card 1: Cover */
+.card1{background:linear-gradient(160deg,#1A1A1A 0%,#2D2D2D 100%);}
+.card1 .top-bar{height:120px;display:flex;align-items:center;padding:0 60px;gap:16px;}
+.card1 .top-bar img{width:56px;height:56px;border-radius:14px;}
+.card1 .top-bar span{color:#FF6A00;font-size:20px;font-weight:700;}
+.card1 .hero{padding:80px 60px 40px;text-align:center;}
+.card1 .hero h1{font-size:52px;font-weight:900;color:white;line-height:1.3;margin-bottom:20px;}
+.card1 .hero h1 span{color:#FF6A00;}
+.card1 .hero p{font-size:22px;color:rgba(255,255,255,0.5);font-weight:300;margin-bottom:50px;}
+.card1 .steps{display:flex;justify-content:center;gap:24px;padding:0 40px;}
+.card1 .step{flex:1;background:rgba(255,255,255,0.06);border-radius:20px;padding:28px 20px;text-align:center;border:1px solid rgba(255,255,255,0.08);}
+.card1 .step .num{width:44px;height:44px;border-radius:50%;background:#FF6A00;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;margin-bottom:12px;}
+.card1 .step h3{color:white;font-size:18px;margin-bottom:6px;}
+.card1 .step p{color:rgba(255,255,255,0.4);font-size:13px;line-height:1.5;}
+.card1 .arrow{color:#FF6A00;font-size:28px;display:flex;align-items:center;}
+.card1 .screenshot{margin:50px 60px 0;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);}
+.card1 .screenshot img{width:100%;display:block;}
+.card1 .badge{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);background:rgba(255,106,0,0.15);color:#FF6A00;padding:10px 32px;border-radius:20px;font-size:16px;font-weight:500;border:1px solid rgba(255,106,0,0.3);}
+
+/* Card 2: Feature - Notes */
+.card2{background:linear-gradient(160deg,#FFF5EB 0%,#FFF 50%,#F5F0FF 100%);}
+.card2 .header{padding:50px 60px 30px;text-align:center;}
+.card2 .header .tag{display:inline-block;background:#FF6A00;color:white;padding:6px 20px;border-radius:20px;font-size:14px;font-weight:600;margin-bottom:16px;}
+.card2 .header h2{font-size:40px;font-weight:900;color:#1A1A1A;line-height:1.3;}
+.card2 .header h2 span{color:#FF6A00;}
+.card2 .modules{padding:20px 50px;display:flex;flex-direction:column;gap:16px;}
+.card2 .mod{background:white;border-radius:20px;padding:28px 32px;box-shadow:0 4px 20px rgba(0,0,0,0.06);display:flex;align-items:flex-start;gap:20px;}
+.card2 .mod .icon{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;}
+.card2 .mod h3{font-size:20px;font-weight:700;color:#1A1A1A;margin-bottom:6px;}
+.card2 .mod p{font-size:14px;color:#666;line-height:1.6;}
+.card2 .screenshot{margin:30px 50px 0;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.1);border:1px solid rgba(0,0,0,0.06);}
+.card2 .screenshot img{width:100%;display:block;}
+
+/* Card 3: Knowledge Graph */
+.card3{background:linear-gradient(160deg,#F5F0FF 0%,#FFF 50%,#FFF5EB 100%);}
+.card3 .header{padding:50px 60px 20px;text-align:center;}
+.card3 .header .tag{display:inline-block;background:#8B5CF6;color:white;padding:6px 20px;border-radius:20px;font-size:14px;font-weight:600;margin-bottom:16px;}
+.card3 .header h2{font-size:40px;font-weight:900;color:#1A1A1A;line-height:1.3;margin-bottom:12px;}
+.card3 .header h2 span{color:#8B5CF6;}
+.card3 .header p{font-size:18px;color:#888;font-weight:300;}
+.card3 .domains{padding:10px 50px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.card3 .dom{background:white;border-radius:16px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,0.04);border-left:4px solid;}
+.card3 .dom .emoji{font-size:24px;margin-bottom:6px;}
+.card3 .dom h4{font-size:16px;font-weight:700;margin-bottom:4px;}
+.card3 .dom p{font-size:11px;color:#888;line-height:1.5;}
+.card3 .screenshot{margin:20px 50px 0;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.1);border:1px solid rgba(0,0,0,0.06);}
+.card3 .screenshot img{width:100%;display:block;}
+.card3 .footer{text-align:center;padding:20px;font-size:14px;color:#8B5CF6;font-weight:500;}
+
+/* Card 4: How it works */
+.card4{background:#1A1A1A;}
+.card4 .header{padding:60px 60px 30px;text-align:center;}
+.card4 .header h2{font-size:40px;font-weight:900;color:white;margin-bottom:12px;}
+.card4 .header h2 span{color:#FF6A00;}
+.card4 .header p{font-size:18px;color:rgba(255,255,255,0.4);}
+.card4 .flow{padding:30px 60px;display:flex;flex-direction:column;gap:0;}
+.card4 .fstep{display:flex;align-items:flex-start;gap:24px;padding:24px 0;}
+.card4 .fstep .fnum{width:52px;height:52px;border-radius:50%;background:#FF6A00;color:white;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;flex-shrink:0;}
+.card4 .fstep .fline{width:2px;height:24px;background:rgba(255,106,0,0.3);margin:0 25px;}
+.card4 .fstep h3{color:white;font-size:22px;font-weight:700;margin-bottom:4px;}
+.card4 .fstep p{color:rgba(255,255,255,0.5);font-size:14px;line-height:1.5;}
+.card4 .fstep .tech{display:inline-block;background:rgba(255,106,0,0.15);color:#FF6A00;padding:3px 12px;border-radius:8px;font-size:12px;margin-top:6px;}
+.card4 .divider{width:2px;height:20px;background:rgba(255,106,0,0.2);margin-left:25px;}
+.card4 .cta{text-align:center;margin:40px 60px;padding:28px;background:linear-gradient(135deg,rgba(255,106,0,0.15),rgba(139,92,246,0.1));border-radius:20px;border:1px solid rgba(255,106,0,0.2);}
+.card4 .cta h3{color:white;font-size:20px;margin-bottom:8px;}
+.card4 .cta p{color:rgba(255,255,255,0.5);font-size:14px;}
+.card4 .cta code{background:rgba(255,255,255,0.1);color:#FF6A00;padding:4px 12px;border-radius:6px;font-size:14px;font-family:monospace;}
+</style>
+</head>
+<body>
+
+<!-- Card 1: Cover -->
+<div class="card card1" id="card1">
+  <div class="top-bar">
+    <img src="../public/logo.svg">
+    <span>Fayeyu's Podcast Gallery</span>
+  </div>
+  <div class="hero">
+    <h1>播客听完就忘？<br>让 AI 帮你<span>提炼知识</span></h1>
+    <p>一键订阅 &rarr; 全自动转录 &rarr; 结构化笔记 &rarr; 知识图谱</p>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><h3>订阅播客</h3><p>输入名字<br>自动获取 RSS</p></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step"><div class="num">2</div><h3>一键提炼</h3><p>Groq 转录<br>+ DeepSeek 提炼</p></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step"><div class="num">3</div><h3>知识沉淀</h3><p>结构化笔记<br>+ 知识图谱</p></div>
+  </div>
+  <div class="screenshot"><img src="../screenshots/01-dashboard.png"></div>
+  <div class="badge">开源免费 &middot; github.com/slgz1115-wjw/fayeyu-podcast-gallery</div>
+</div>
+
+<!-- Card 2: Notes Feature -->
+<div class="card card2" id="card2">
+  <div class="header">
+    <div class="tag">核心功能</div>
+    <h2>三模块<span>结构化笔记</span><br>不是敷衍的 AI 总结</h2>
+  </div>
+  <div class="modules">
+    <div class="mod">
+      <div class="icon" style="background:#FFF3E8;">💡</div>
+      <div><h3>反共识金句</h3><p>10-20 条「听起来反常识，但仔细一想确实有道理」的观点，放在最前面作为快速索引</p></div>
+    </div>
+    <div class="mod">
+      <div class="icon" style="background:#F0F9FF;">📖</div>
+      <div><h3>分章节核心观点</h3><p>按话题分章，完整还原嘉宾论述逻辑：核心命题 + 展开论述 + 话语体系，不简化为列表</p></div>
+    </div>
+    <div class="mod">
+      <div class="icon" style="background:#F5F0FF;">📚</div>
+      <div><h3>专业名词词典</h3><p>AI / 经济学 / 哲学等专业术语，2-3 句话通俗解释 + 本集播客语境说明</p></div>
+    </div>
+  </div>
+  <div class="screenshot"><img src="../screenshots/04-notes-drawer.png"></div>
+</div>
+
+<!-- Card 3: Knowledge Graph -->
+<div class="card card3" id="card3">
+  <div class="header">
+    <div class="tag">知识图谱</div>
+    <h2>跨播客<span>概念网络</span><br>像 Obsidian 一样双向链接</h2>
+    <p>所有播客中的专业概念，自动按 6 大领域分类</p>
+  </div>
+  <div class="domains">
+    <div class="dom" style="border-color:#6366F1;"><div class="emoji">🔬</div><h4>底层原理</h4><p>贝叶斯、奥卡姆剃刀、信息论...</p></div>
+    <div class="dom" style="border-color:#8B5CF6;"><div class="emoji">🧠</div><h4>AI 基础理论</h4><p>Transformer、强化学习、AGI...</p></div>
+    <div class="dom" style="border-color:#EF4444;"><div class="emoji">⚙️</div><h4>AI 工程</h4><p>CUDA、MCP、Benchmark...</p></div>
+    <div class="dom" style="border-color:#10B981;"><div class="emoji">🤖</div><h4>AI 应用</h4><p>Agent、具身智能、端到端...</p></div>
+    <div class="dom" style="border-color:#F59E0B;"><div class="emoji">🚀</div><h4>商业与战略</h4><p>ARR、PMF、网络效应...</p></div>
+    <div class="dom" style="border-color:#3B82F6;"><div class="emoji">📈</div><h4>经济与金融</h4><p>马太效应、FOMO、期权...</p></div>
+  </div>
+  <div class="screenshot"><img src="../screenshots/05-knowledge-graph.png"></div>
+  <div class="footer">点击概念 &rarr; 跳转笔记原文 &rarr; 术语弹出定义卡片</div>
+</div>
+
+<!-- Card 4: How it works -->
+<div class="card card4" id="card4">
+  <div class="header">
+    <h2>全自动，<span>你只需点一个按钮</span></h2>
+    <p>从音频到知识图谱，无需手动操作</p>
+  </div>
+  <div class="flow">
+    <div class="fstep">
+      <div class="fnum">1</div>
+      <div><h3>搜索并订阅播客</h3><p>输入播客名字，自动从 Apple Podcasts 获取 RSS<br>每 30 分钟自动检测新剧集</p><div class="tech">iTunes Search API</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="fstep">
+      <div class="fnum">2</div>
+      <div><h3>极速转录</h3><p>自动下载音频，Groq Whisper 云端转录<br>1 小时播客约 2 分钟转完</p><div class="tech">Groq Whisper Large V3</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="fstep">
+      <div class="fnum">3</div>
+      <div><h3>AI 内容提炼</h3><p>DeepSeek 按专业方法论输出三模块笔记<br>反共识金句 + 核心观点 + 名词词典</p><div class="tech">DeepSeek V3</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="fstep">
+      <div class="fnum">4</div>
+      <div><h3>知识图谱自动生成</h3><p>从词典模块提取概念，按 6 大领域分类<br>跨播客双向链接，可编辑可标注</p><div class="tech">Auto-classification + Bidirectional Links</div></div>
+    </div>
+  </div>
+  <div class="cta">
+    <h3>开源免费，立即体验</h3>
+    <p style="margin-top:8px;"><code>github.com/slgz1115-wjw/fayeyu-podcast-gallery</code></p>
+  </div>
+</div>
+
+</body>
+</html>

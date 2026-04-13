@@ -521,7 +521,20 @@ app.post('/api/notes/:id/process', requireAdmin, async (req, res) => {
 
       const result = await extractWithPrompt(prompt);
 
-      db.prepare("UPDATE notes SET content=?, status='done', updated_at=datetime('now') WHERE id=?").run(result, id);
+      // For "article" category skills, the LLM only outputs the dictionary;
+      // we prepend the original raw content so the final note has both.
+      // Also clean up mammoth's overzealous markdown escaping (\- \. \_ etc).
+      const cleanMammoth = (s) => (s || '').replace(/\\([-.\_\[\]()#+!*<>])/g, '$1');
+      let finalContent;
+      if (skill.category === 'article') {
+        const cleanedRaw = cleanMammoth(rawContent);
+        const dictPart = result.trim();
+        finalContent = cleanedRaw + '\n\n---\n\n' + dictPart;
+      } else {
+        finalContent = cleanMammoth(result);
+      }
+
+      db.prepare("UPDATE notes SET content=?, status='done', updated_at=datetime('now') WHERE id=?").run(finalContent, id);
       noteJobs.set(id, { step: 'done', progress: 100, message: '提炼完成' });
       setTimeout(() => noteJobs.delete(id), 60000);
     } catch (err) {

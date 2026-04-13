@@ -432,7 +432,7 @@ function buildTermDB(){
   const parseDict=(content,src,id)=>{
     if(!content)return;
     const ds=content.split(/##\s*(?:模块\s*C|专业名词|名词.*词典)/i)[1]||'';
-    const re=/(?:^|\n)\s*(?:[-*]\s*)?\*\*\[?([^\]*\n]+?)\]?\*\*[:：]?\s*(?:（([^）\n]*)）|\(([^)\n]*)\))?([^\n]*(?:\n(?!\s*(?:[-*]\s*)?\*\*|\n|#)[^\n#]*)*)/g;
+    const re=/(?:^|\n)\s*(?:[-*]\s*)?\*\*[\[【]?([^\]】*\n]+?)[\]】]?\*\*[:：]?\s*(?:（([^）\n]*)）|\(([^)\n]*)\))?([^\n]*(?:\n(?!\s*(?:[-*]\s*)?\*\*|\n|#)[^\n#]*)*)/g;
     let m;
     while((m=re.exec(ds))!==null){
       let name=m[1].trim();
@@ -776,7 +776,8 @@ function rnItem(n){
 function od(id){
   const ep=E.find(e=>e.id===id);if(!ep)return;
   document.getElementById('dt').textContent=ep.title;
-  let html=marked.parse(ep.notes||'*暂无*');
+  const raw=cleanMammothEscapes(ep.notes||'*暂无*');
+  let html=marked.parse(raw);
   html=highlightTerms(html);
   const epTerms=Object.values(termDB).filter(t=>(t.episodes||[]).find(e=>e.id===id));
   let bl='';
@@ -784,15 +785,34 @@ function od(id){
     bl=`<div class="backlinks"><h3>&#128279; 本集涉及的核心概念 (${epTerms.length})</h3>${epTerms.map(t=>`<div class="bl-item" onclick="scrollToTerm('${t.name.replace(/'/g,"\\'")}')"><div class="bl-term">${t.name}${t.eng?` (${t.eng})`:''}</div><div class="bl-def">${(t.def||'').substring(0,80)}${(t.def||'').length>80?'...':''}</div></div>`).join('')}</div>`;
   }
   document.getElementById('db').innerHTML=html+bl;
-  document.getElementById('dactions').style.display='none';
+  const actions=document.getElementById('dactions');
+  if(isAdmin&&ep.notes){
+    actions.style.display='flex';
+    actions.innerHTML=`<button class="bt bp bs" onclick="beginEditEp(${id})">&#9998; 编辑笔记</button>`;
+  }else actions.style.display='none';
   document.getElementById('drw').classList.add('open');
   document.getElementById('dov').classList.add('open');
+}
+function beginEditEp(id){
+  const ep=E.find(e=>e.id===id);if(!ep)return;
+  const body=document.getElementById('db');
+  body.innerHTML=`<textarea id="ep-edit-ta" style="width:100%;min-height:62vh;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;color:var(--ink);resize:vertical;">${(ep.notes||'').replace(/</g,'&lt;')}</textarea>`;
+  const actions=document.getElementById('dactions');
+  actions.innerHTML=`<button class="bt bp bs" onclick="saveEditEp(${id})">&#128190; 保存</button><button class="bt bou bs" onclick="od(${id})">取消</button>`;
+}
+async function saveEditEp(id){
+  const ta=document.getElementById('ep-edit-ta');if(!ta)return;
+  try{
+    await api(`/episodes/${id}`,{method:'PATCH',body:JSON.stringify({notes:ta.value})});
+    await ld();od(id);
+  }catch(e){alert('保存失败：'+e.message);}
 }
 
 function odn(id){
   const n=notes.find(x=>x.id===id);if(!n)return;
   document.getElementById('dt').textContent=n.title;
-  let html=marked.parse(n.content||n.raw_content||'*暂无内容*');
+  const raw=cleanMammothEscapes(n.content||n.raw_content||'*暂无内容*');
+  let html=marked.parse(raw);
   html=highlightTerms(html);
   const noteTerms=Object.values(termDB).filter(t=>(t.episodes||[]).find(e=>e.id==='n'+id));
   let bl='';
@@ -800,18 +820,43 @@ function odn(id){
     bl=`<div class="backlinks"><h3>&#128279; 涉及概念 (${noteTerms.length})</h3>${noteTerms.map(t=>`<div class="bl-item" onclick="scrollToTerm('${t.name.replace(/'/g,"\\'")}')"><div class="bl-term">${t.name}${t.eng?` (${t.eng})`:''}</div><div class="bl-def">${(t.def||'').substring(0,80)}${(t.def||'').length>80?'...':''}</div></div>`).join('')}</div>`;
   }
   document.getElementById('db').innerHTML=html+bl;
+  document.getElementById('db').dataset.noteId=id;
   const actions=document.getElementById('dactions');
   if(isAdmin){
     actions.style.display='flex';
     actions.innerHTML=`
-      <button class="bt bp bs" onclick="processNote(${id})">&#9889; 重新提炼</button>
-      <button class="bt bou bs" onclick="editNoteTitle(${id})">✎ 标题</button>
-      <button class="bt bou bs" onclick="replaceNoteFile(${id})">⇄ 替换</button>
-      <button class="bt brd bs" onclick="delNote(${id})">✕ 删除</button>
+      <button class="bt bp bs" onclick="beginEditNote(${id})">&#9998; 编辑内容</button>
+      <button class="bt bou bs" onclick="processNote(${id})">&#9889; 重新提炼</button>
+      <button class="bt bou bs" onclick="editNoteTitle(${id})">&#9998; 标题</button>
+      <button class="bt bou bs" onclick="replaceNoteFile(${id})">&#8644; 替换</button>
+      <button class="bt brd bs" onclick="delNote(${id})">&#10005; 删除</button>
     `;
   }else actions.style.display='none';
   document.getElementById('drw').classList.add('open');
   document.getElementById('dov').classList.add('open');
+}
+
+function beginEditNote(id){
+  const n=notes.find(x=>x.id===id);if(!n)return;
+  const body=document.getElementById('db');
+  const current=n.content||n.raw_content||'';
+  body.innerHTML=`<textarea id="note-edit-ta" style="width:100%;min-height:62vh;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;color:var(--ink);resize:vertical;">${current.replace(/</g,'&lt;')}</textarea>
+  <div style="font-size:10px;color:var(--ink3);margin-top:8px;">直接编辑 markdown，保存后立即生效。重新提炼会覆盖当前内容。</div>`;
+  const actions=document.getElementById('dactions');
+  actions.innerHTML=`
+    <button class="bt bp bs" onclick="saveEditNote(${id})">&#128190; 保存</button>
+    <button class="bt bou bs" onclick="odn(${id})">取消</button>
+  `;
+}
+async function saveEditNote(id){
+  const ta=document.getElementById('note-edit-ta');
+  if(!ta)return;
+  const newContent=ta.value;
+  try{
+    await api(`/notes/${id}`,{method:'PATCH',body:JSON.stringify({content:newContent,status:'done'})});
+    await ld();
+    odn(id);
+  }catch(e){alert('保存失败：'+e.message);}
 }
 
 function cd(){document.getElementById('drw').classList.remove('open');document.getElementById('dov').classList.remove('open');hidePop();}
@@ -908,10 +953,70 @@ async function parseFileContent(file){
   const ext=file.name.split('.').pop().toLowerCase();
   try{
     if(ext==='md'||ext==='markdown'||ext==='txt'){return await file.text();}
-    else if(ext==='docx'){const arrayBuffer=await file.arrayBuffer();const result=await mammoth.convertToMarkdown({arrayBuffer});return result.value;}
+    else if(ext==='docx'){
+      const arrayBuffer=await file.arrayBuffer();
+      // Use HTML output so tables/lists survive, then convert ourselves.
+      const result=await mammoth.convertToHtml({arrayBuffer});
+      return htmlToMd(result.value);
+    }
     else{alert('不支持的格式');return null;}
   }catch(e){alert('解析失败：'+e.message);return null;}
 }
+
+// Lightweight HTML → Markdown: handles headings, paragraphs, bold/italic,
+// lists, and tables (as GFM pipe tables). Strips noise.
+function htmlToMd(html){
+  const wrap=document.createElement('div');wrap.innerHTML=html;
+  const out=[];
+  function text(n){return (n.textContent||'').replace(/\s+/g,' ').trim();}
+  function tableToMd(tbl){
+    const rows=[...tbl.querySelectorAll('tr')].map(tr=>
+      [...tr.querySelectorAll('th,td')].map(td=>text(td).replace(/\|/g,'\\|'))
+    );
+    if(!rows.length)return '';
+    const cols=Math.max(...rows.map(r=>r.length));
+    rows.forEach(r=>{while(r.length<cols)r.push('');});
+    const lines=[];
+    lines.push('| '+rows[0].join(' | ')+' |');
+    lines.push('|'+' --- |'.repeat(cols));
+    for(let i=1;i<rows.length;i++)lines.push('| '+rows[i].join(' | ')+' |');
+    return lines.join('\n');
+  }
+  function walk(node,ctx){
+    ctx=ctx||{};
+    for(const n of node.childNodes){
+      if(n.nodeType===3){out.push(n.textContent);continue;}
+      if(n.nodeType!==1)continue;
+      const t=n.tagName.toLowerCase();
+      if(/^h[1-6]$/.test(t)){out.push('\n\n'+'#'.repeat(+t[1])+' ');walk(n,ctx);out.push('\n\n');}
+      else if(t==='p'){walk(n,ctx);out.push('\n\n');}
+      else if(t==='br'){out.push('  \n');}
+      else if(t==='strong'||t==='b'){out.push('**');walk(n,ctx);out.push('**');}
+      else if(t==='em'||t==='i'){out.push('*');walk(n,ctx);out.push('*');}
+      else if(t==='code'){out.push('`');walk(n,ctx);out.push('`');}
+      else if(t==='a'){out.push('[');walk(n,ctx);out.push('](' + (n.getAttribute('href')||'') + ')');}
+      else if(t==='ul'){out.push('\n');walk(n,{...ctx,list:'ul'});out.push('\n');}
+      else if(t==='ol'){out.push('\n');walk(n,{...ctx,list:'ol',idx:1});out.push('\n');}
+      else if(t==='li'){
+        out.push(ctx.list==='ol'?((ctx.idx++)+'. '):'- ');
+        walk(n,{...ctx,list:null});
+        out.push('\n');
+      }
+      else if(t==='blockquote'){out.push('\n> ');walk(n,ctx);out.push('\n\n');}
+      else if(t==='hr'){out.push('\n---\n');}
+      else if(t==='table'){out.push('\n\n'+tableToMd(n)+'\n\n');}
+      else if(t==='img'){out.push('![]('+ (n.getAttribute('src')||'')+')');}
+      else{walk(n,ctx);}
+    }
+  }
+  walk(wrap);
+  return out.join('')
+    .replace(/\\([-.\_\[\]()#+!*<>])/g,'$1')  // unescape mammoth
+    .replace(/[ \t]+\n/g,'\n')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
+}
+function cleanMammothEscapes(s){return (s||'').replace(/\\([-.\_\[\]()#+!*<>])/g,'$1');}
 
 // ========== SOURCE DRAWER ==========
 function openSrc(type){
