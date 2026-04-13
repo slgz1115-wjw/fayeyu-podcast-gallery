@@ -76,6 +76,18 @@ body::before{
   background:var(--o);color:#fff;padding:2px 7px;border-radius:8px;min-width:18px;text-align:center;
 }
 .pill.pill-lark:hover{border-color:var(--p);box-shadow:0 10px 30px rgba(167,139,250,0.15);}
+.pill.pill-glimpse:hover{border-color:var(--yl);box-shadow:0 10px 30px rgba(251,191,36,0.18);}
+
+/* Comments panel inside drawer */
+.comments-panel{margin-top:32px;padding-top:24px;border-top:1px solid var(--line);}
+.comments-panel h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--yl);margin-bottom:14px;font-weight:600;font-family:'Inter',sans-serif;font-style:normal;}
+.cmt-item{padding:12px 14px;background:rgba(251,191,36,0.05);border-left:2px solid var(--yl);border-radius:0 9px 9px 0;margin-bottom:10px;cursor:pointer;transition:all 0.15s;}
+.cmt-item:hover{background:rgba(251,191,36,0.1);}
+.cmt-item .cmt-q{font-size:10px;color:var(--ink3);font-style:italic;line-height:1.5;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.cmt-item .cmt-q::before{content:'「';}
+.cmt-item .cmt-q::after{content:'」';}
+.cmt-item .cmt-t{font-size:13px;color:var(--ink);line-height:1.7;}
+.cmt-item .cmt-t:empty::before{content:'(无内容)';color:var(--ink4);}
 
 /* ===== TABS ===== */
 .tabs{
@@ -381,6 +393,9 @@ body::before{
       <button class="pill pill-note" onclick="openSrc('note')">
         <span class="pill-ic">&#9997;</span> 笔记
       </button>
+      <button class="pill pill-glimpse" onclick="openGlimpseToday()">
+        <span class="pill-ic">&#10024;</span> 惊鸿一瞥
+      </button>
     </div>
   </section>
 
@@ -553,7 +568,7 @@ function rLibrary(el){
   const doneN=notes.filter(n=>n.status==='done').map(n=>({kind:'note',type:n.source_type||'note',id:n.id,title:n.title,source:n.source_type,date:n.created_at,content:n.content,starred:n.starred,_raw:n}));
   let allDone=[...doneE,...doneN].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
 
-  const counts={all:allDone.length,podcast:doneE.length,lark:doneN.filter(x=>x.type==='lark').length,note:doneN.filter(x=>x.type==='note').length,starred:allDone.filter(x=>x.starred).length};
+  const counts={all:allDone.length,podcast:doneE.length,lark:doneN.filter(x=>x.type==='lark').length,note:doneN.filter(x=>x.type==='note').length,glimpse:doneN.filter(x=>x.type==='glimpse').length,starred:allDone.filter(x=>x.starred).length};
 
   let html=`<div class="ph"><h2>Library</h2><span class="sub">${counts.all} pieces</span></div>
     <div class="fb">
@@ -561,6 +576,7 @@ function rLibrary(el){
       <span class="fc ${tf==='podcast'?'act':''}" onclick="ST='podcast';rv()">&#127911; 播客 · ${counts.podcast}</span>
       <span class="fc ${tf==='lark'?'act':''}" onclick="ST='lark';rv()">&#128214; 飞书 · ${counts.lark}</span>
       <span class="fc ${tf==='note'?'act':''}" onclick="ST='note';rv()">&#9997; 笔记 · ${counts.note}</span>
+      <span class="fc ${tf==='glimpse'?'act':''}" onclick="ST='glimpse';rv()">&#10024; 惊鸿一瞥 · ${counts.glimpse}</span>
       <span class="fc ${tf==='starred'?'act':''}" onclick="ST='starred';rv()">&#11088; 收藏 · ${counts.starred}</span>
     </div>`;
 
@@ -612,13 +628,13 @@ function rLibrary(el){
 }
 
 function renderLibItem(item){
-  const typeIcon={podcast:'&#127911;',lark:'&#128214;',note:'&#9997;'}[item.type]||'&#128196;';
+  const typeIcon={podcast:'&#127911;',lark:'&#128214;',note:'&#9997;',glimpse:'&#10024;'}[item.type]||'&#128196;';
   const dt=item.date?new Date(item.date).toLocaleDateString('zh-CN'):'';
   const summary=item.content?getSummary(item.content):'';
   const starred=item.starred?'&#9733;':'&#9734;';
   const clickFn=item.kind==='ep'?`od(${item.id})`:`odn(${item.id})`;
   const toggleFn=item.kind==='ep'?`toggleStar(${item.id})`:`toggleStarN(${item.id})`;
-  const sourceLabel=item.type==='podcast'?(item.source==='_散装收藏'?'散装':item.source):(item.type==='lark'?'飞书文档':'笔记');
+  const sourceLabel=item.type==='podcast'?(item.source==='_散装收藏'?'散装':item.source):({lark:'飞书文档',note:'笔记',glimpse:'惊鸿一瞥'}[item.type]||'笔记');
   return`<div class="ec type-${item.type}" onclick="${clickFn}"><div class="et">
     ${item.artwork?`<div class="ea"><img src="${item.artwork}"></div>`:`<div class="ea">${typeIcon}</div>`}
     <div class="ei"><div class="etl">${isAdmin?`<button class="star-btn ${item.starred?'on':''}" onclick="event.stopPropagation();${toggleFn}">${starred}</button>`:(item.starred?'&#9733; ':'')}${item.title}</div>
@@ -887,7 +903,12 @@ function renderDrawerBody(){
   if(targetTerms.length){
     bl=`<div class="backlinks"><h3>&#128279; 涉及概念 (${targetTerms.length})</h3>${targetTerms.map(t=>`<div class="bl-item" onclick="scrollToTerm('${t.name.replace(/'/g,"\\'")}')"><div class="bl-term">${t.name}${t.eng?` (${t.eng})`:''}</div><div class="bl-def">${(t.def||'').substring(0,80)}${(t.def||'').length>80?'...':''}</div></div>`).join('')}</div>`;
   }
-  body.innerHTML=`<div id="db-content">${html}</div>${bl}`;
+  // Thoughts panel (comments list)
+  let cp='';
+  if(_cur.comments&&_cur.comments.length){
+    cp=`<div class="comments-panel"><h3>&#128172; 我的思考 · ${_cur.comments.length}</h3>${_cur.comments.map(c=>`<div class="cmt-item" data-cid="${c.id}" onclick="scrollToComment(${c.id})"><div class="cmt-q">${(c.quote||'').replace(/</g,'&lt;')}</div><div class="cmt-t">${(c.comment||'').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div></div>`).join('')}</div>`;
+  }
+  body.innerHTML=`<div id="db-content">${html}</div>${bl}${cp}`;
 
   // Apply comment highlights into #db-content only
   applyCommentHighlights(document.getElementById('db-content'),_cur.comments);
@@ -919,6 +940,29 @@ function cd(){
 }
 
 function toggleMax(){document.getElementById('drw').classList.toggle('max');}
+
+function scrollToComment(cid){
+  const hl=document.querySelector(`.cmt-hl[data-cid="${cid}"]`);
+  if(hl){hl.scrollIntoView({behavior:'smooth',block:'center'});const old=hl.style.filter;hl.style.filter='brightness(1.4)';setTimeout(()=>hl.style.filter=old,1200);}
+}
+
+// ---------- Glimpse (惊鸿一瞥) ----------
+async function openGlimpseToday(){
+  if(!isAdmin){showLoginModal();return;}
+  const d=new Date();
+  const today=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  let g=notes.find(n=>n.source_type==='glimpse'&&n.title===today);
+  if(!g){
+    const r=await api('/notes',{method:'POST',body:JSON.stringify({
+      source_type:'glimpse',title:today,content:`# ${today}\n\n`,status:'done',metadata:{}
+    })});
+    await ld();
+    g=notes.find(n=>n.id===r.id);
+  }
+  if(!g)return;
+  openDrawer('note',g.id);
+  setTimeout(()=>beginInlineEdit(),350);
+}
 
 // ---------- Inline editing (contenteditable + htmlToMd on save) ----------
 function beginInlineEdit(){

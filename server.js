@@ -460,8 +460,9 @@ app.get('/api/notes', (req, res) => {
 
 app.post('/api/notes', requireAdmin, (req, res) => {
   const { source_type, source_ref, title, content, raw_content, skill_id, metadata } = req.body;
+  const explicitStatus = req.body.status;
   const info = db.prepare(`INSERT INTO notes (source_type, source_ref, title, content, raw_content, skill_id, status, metadata) VALUES (?,?,?,?,?,?,?,?)`).run(
-    source_type, source_ref || null, title, content || null, raw_content || null, skill_id || null, content ? 'done' : 'new', JSON.stringify(metadata || {})
+    source_type, source_ref || null, title, content || null, raw_content || null, skill_id || null, explicitStatus || (content ? 'done' : 'new'), JSON.stringify(metadata || {})
   );
   res.json({ id: info.lastInsertRowid });
 });
