@@ -470,7 +470,7 @@ app.post('/api/notes', requireAdmin, (req, res) => {
 app.patch('/api/notes/:id', requireAdmin, (req, res) => {
   const fields = [];
   const params = [];
-  ['title', 'content', 'raw_content', 'status', 'starred', 'metadata'].forEach(f => {
+  ['title', 'content', 'raw_content', 'status', 'starred', 'metadata', 'skill_id'].forEach(f => {
     if (req.body[f] !== undefined) { fields.push(`${f}=?`); params.push(f === 'metadata' ? JSON.stringify(req.body[f]) : req.body[f]); }
   });
   if (fields.length) {
@@ -493,10 +493,13 @@ app.post('/api/notes/:id/process', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   const note = db.prepare('SELECT * FROM notes WHERE id=?').get(id);
   if (!note) return res.status(404).json({ error: 'not found' });
-  if (!note.raw_content) return res.status(400).json({ error: 'no raw_content to process' });
+  // Allow processing even without raw_content: fall back to content
+  // (useful for glimpse notes which only have a content field).
+  if (!note.raw_content && !note.content && note.source_type !== 'lark') {
+    return res.status(400).json({ error: 'no content to process' });
+  }
 
-  // If it's a lark note without raw_content yet, fetch from lark first
-  let rawContent = note.raw_content;
+  let rawContent = note.raw_content || note.content;
 
   db.prepare('UPDATE notes SET status=? WHERE id=?').run('processing', id);
   noteJobs.set(id, { step: 'starting', progress: 10, message: '准备中...' });

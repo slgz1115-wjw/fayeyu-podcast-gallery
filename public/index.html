@@ -89,6 +89,26 @@ body::before{
 .cmt-item .cmt-t{font-size:13px;color:var(--ink);line-height:1.7;}
 .cmt-item .cmt-t:empty::before{content:'(无内容)';color:var(--ink4);}
 
+/* Glimpse timeline */
+.glimpse-nav{position:sticky;top:-26px;background:rgba(19,19,19,0.95);backdrop-filter:blur(8px);margin:-26px -32px 20px;padding:14px 32px;border-bottom:1px solid var(--line);z-index:5;overflow-x:auto;white-space:nowrap;}
+.glimpse-nav a{display:inline-block;font-size:11px;padding:6px 13px;margin-right:6px;border:1px solid var(--line2);border-radius:100px;color:var(--ink2);cursor:pointer;transition:all 0.15s;font-family:'JetBrains Mono',monospace;}
+.glimpse-nav a:hover{color:var(--yl);border-color:var(--yl);}
+.glimpse-month{font-family:'Cormorant Garamond',serif;font-size:28px;font-style:italic;color:var(--yl);margin:36px 0 18px;border-bottom:1px solid rgba(251,191,36,0.2);padding-bottom:10px;display:flex;align-items:baseline;gap:10px;}
+.glimpse-month .count{font-size:11px;color:var(--ink3);font-family:'Inter',sans-serif;font-style:normal;letter-spacing:1px;text-transform:uppercase;}
+.glimpse-entry{margin-bottom:26px;padding:20px 22px;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-left:3px solid rgba(251,191,36,0.4);border-radius:0 12px 12px 0;transition:border-left-color 0.2s;}
+.glimpse-entry.today{border-left-color:var(--yl);background:rgba(251,191,36,0.04);}
+.glimpse-entry:hover{border-left-color:var(--yl);}
+.glimpse-hdr{display:flex;align-items:center;margin-bottom:14px;}
+.glimpse-date{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--yl);letter-spacing:0.5px;}
+.glimpse-date .today-tag{margin-left:10px;font-size:10px;background:var(--yl);color:var(--bg);padding:2px 8px;border-radius:100px;font-weight:700;}
+.glimpse-tools{margin-left:auto;display:flex;gap:4px;}
+.glimpse-tools .icon-btn{font-size:12px;padding:4px 8px;}
+.glimpse-body{font-size:13.5px;line-height:1.85;color:var(--ink2);}
+.glimpse-body h1,.glimpse-body h2{display:none;}  /* the date is the header */
+.glimpse-body h3{font-size:14px;color:var(--ink);margin:14px 0 6px;}
+.glimpse-body p{margin-bottom:10px;}
+.glimpse-body[contenteditable="true"]{outline:none;border:1px dashed var(--yl);border-radius:8px;padding:12px;background:rgba(251,191,36,0.04);min-height:60px;}
+
 /* ===== TABS ===== */
 .tabs{
   display:flex;gap:6px;justify-content:center;
@@ -393,7 +413,7 @@ body::before{
       <button class="pill pill-note" onclick="openSrc('note')">
         <span class="pill-ic">&#9997;</span> 笔记
       </button>
-      <button class="pill pill-glimpse" onclick="openGlimpseToday()">
+      <button class="pill pill-glimpse" onclick="openGlimpseTimeline()">
         <span class="pill-ic">&#10024;</span> 惊鸿一瞥
       </button>
     </div>
@@ -946,22 +966,150 @@ function scrollToComment(cid){
   if(hl){hl.scrollIntoView({behavior:'smooth',block:'center'});const old=hl.style.filter;hl.style.filter='brightness(1.4)';setTimeout(()=>hl.style.filter=old,1200);}
 }
 
-// ---------- Glimpse (惊鸿一瞥) ----------
-async function openGlimpseToday(){
+// ---------- Glimpse (惊鸿一瞥) timeline ----------
+function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+async function openGlimpseTimeline(){
   if(!isAdmin){showLoginModal();return;}
-  const d=new Date();
-  const today=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  let g=notes.find(n=>n.source_type==='glimpse'&&n.title===today);
-  if(!g){
+  const today=todayISO();
+  let todayNote=notes.find(n=>n.source_type==='glimpse'&&n.title===today);
+  if(!todayNote){
     const r=await api('/notes',{method:'POST',body:JSON.stringify({
       source_type:'glimpse',title:today,content:`# ${today}\n\n`,status:'done',metadata:{}
     })});
     await ld();
-    g=notes.find(n=>n.id===r.id);
+    todayNote=notes.find(n=>n.id===r.id);
   }
-  if(!g)return;
-  openDrawer('note',g.id);
-  setTimeout(()=>beginInlineEdit(),350);
+  _cur={type:'glimpse',id:null,comments:[],editing:false};
+  document.getElementById('dt').textContent='惊鸿一瞥 · 流水';
+  document.getElementById('drw').classList.add('open','max');
+  document.getElementById('dov').classList.add('open');
+  renderGlimpseTimeline();
+}
+
+function renderGlimpseTimeline(){
+  const today=todayISO();
+  const gs=notes.filter(n=>n.source_type==='glimpse').sort((a,b)=>a.title.localeCompare(b.title));
+  if(!gs.length){document.getElementById('db').innerHTML='<div class="emp">暂无条目</div>';return;}
+  // Group by YYYY-MM
+  const groups={};
+  gs.forEach(g=>{const ym=g.title.slice(0,7);if(!groups[ym])groups[ym]=[];groups[ym].push(g);});
+  const months=Object.keys(groups).sort();
+
+  let html=`<div class="glimpse-nav">${months.map(m=>`<a onclick="document.getElementById('g-${m}').scrollIntoView({behavior:'smooth',block:'start'})">${m} · ${groups[m].length}</a>`).join('')}</div>`;
+
+  for(const m of months){
+    html+=`<h2 id="g-${m}" class="glimpse-month">${m}<span class="count">${groups[m].length} 条</span></h2>`;
+    for(const g of groups[m]){
+      const isToday=g.title===today;
+      const rendered=marked.parse(cleanMammothEscapes(g.content||'').replace(/^#\s+\d{4}-\d{2}-\d{2}\n+/,''));
+      html+=`<article class="glimpse-entry ${isToday?'today':''}" data-gid="${g.id}" data-title="${g.title}">
+        <div class="glimpse-hdr">
+          <span class="glimpse-date">${g.title}${isToday?'<span class="today-tag">今天</span>':''}</span>
+          <div class="glimpse-tools" id="gt-${g.id}">
+            <button class="icon-btn" onclick="editGlimpse(${g.id})" title="编辑">&#9998;</button>
+            <button class="icon-btn" onclick="exportGlimpse(${g.id})" title="导出">&#11123;</button>
+            <button class="icon-btn" onclick="delGlimpse(${g.id})" title="删除">&#10005;</button>
+          </div>
+        </div>
+        <div class="glimpse-body" id="gb-${g.id}">${rendered}</div>
+      </article>`;
+    }
+  }
+  document.getElementById('db').innerHTML=html;
+  const actions=document.getElementById('dactions');
+  actions.innerHTML=`
+    <button class="bt bou bs" onclick="extractGlimpseConcepts()" title="把所有条目喂给 concept-extract，术语自动进入知识图谱">&#10024; 提炼概念</button>
+    <button class="bt bou bs" onclick="exportGlimpseMonth()">&#11123; 导出当月</button>
+    <button class="bt bp bs" onclick="exportGlimpseAll()">&#11123; 全部导出</button>
+  `;
+  actions.style.display='flex';
+  // Scroll to today
+  setTimeout(()=>{
+    const todayEl=document.querySelector(`.glimpse-entry[data-title="${today}"]`);
+    if(todayEl){todayEl.scrollIntoView({behavior:'smooth',block:'center'});
+      // Auto-enter edit for today if empty
+      const g=gs.find(x=>x.title===today);
+      const stripped=(g.content||'').replace(/^#\s+\d{4}-\d{2}-\d{2}\n*/,'').trim();
+      if(!stripped)editGlimpse(g.id);
+    }
+  },150);
+}
+
+function editGlimpse(id){
+  const el=document.getElementById('gb-'+id);
+  if(!el)return;
+  el.setAttribute('contenteditable','true');
+  el.focus();
+  // place caret at end
+  const range=document.createRange();range.selectNodeContents(el);range.collapse(false);
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+  const tools=document.getElementById('gt-'+id);
+  if(tools)tools.innerHTML=`
+    <button class="icon-btn" onclick="saveGlimpse(${id})" title="保存" style="color:var(--yl);border-color:var(--yl);">&#128190;</button>
+    <button class="icon-btn" onclick="renderGlimpseTimeline()" title="取消">&#10005;</button>
+  `;
+}
+async function saveGlimpse(id){
+  const el=document.getElementById('gb-'+id);
+  if(!el)return;
+  const g=notes.find(n=>n.id===id);
+  const md='# '+(g?g.title:'')+'\n\n'+htmlToMd(el.innerHTML);
+  try{
+    await api(`/notes/${id}`,{method:'PATCH',body:JSON.stringify({content:md,status:'done'})});
+    await ld();
+    renderGlimpseTimeline();
+  }catch(e){alert('保存失败：'+e.message);}
+}
+async function delGlimpse(id){
+  const g=notes.find(n=>n.id===id);if(!g)return;
+  if(!confirm(`删除 ${g.title} 的条目？`))return;
+  await api(`/notes/${id}`,{method:'DELETE'});
+  await ld();
+  renderGlimpseTimeline();
+}
+
+function downloadMd(filename,content){
+  const blob=new Blob([content],{type:'text/markdown;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function exportGlimpse(id){
+  const g=notes.find(n=>n.id===id);if(!g)return;
+  downloadMd(`惊鸿一瞥-${g.title}.md`,g.content||'');
+}
+function exportGlimpseMonth(){
+  // Use first month visible near scroll top; simpler: export current month
+  const m=todayISO().slice(0,7);
+  const gs=notes.filter(n=>n.source_type==='glimpse'&&n.title.startsWith(m)).sort((a,b)=>a.title.localeCompare(b.title));
+  if(!gs.length){alert('当月暂无条目');return;}
+  const all=gs.map(g=>g.content||'').join('\n\n---\n\n');
+  downloadMd(`惊鸿一瞥-${m}.md`,all);
+}
+function exportGlimpseAll(){
+  const gs=notes.filter(n=>n.source_type==='glimpse').sort((a,b)=>a.title.localeCompare(b.title));
+  if(!gs.length)return;
+  const all=gs.map(g=>g.content||'').join('\n\n---\n\n');
+  downloadMd(`惊鸿一瞥-all.md`,all);
+}
+async function extractGlimpseConcepts(){
+  const gs=notes.filter(n=>n.source_type==='glimpse'&&n.content&&n.content.length>200);
+  const pending=gs.filter(g=>!(g.content||'').includes('## 专业名词解释词典'));
+  if(!pending.length){alert('所有条目都已提炼过概念');return;}
+  if(!confirm(`将对 ${pending.length} 个未提炼的 glimpse 条目逐一跑 concept-extract，术语自动进入知识图谱。继续？`))return;
+  // Set skill to concept-extract (category=article)
+  const skill=skills.find(s=>s.category==='article');
+  if(!skill){alert('找不到 article 类 Skill');return;}
+  for(const g of pending){
+    await api(`/notes/${g.id}`,{method:'PATCH',body:JSON.stringify({skill_id:skill.id})});
+    await api(`/notes/${g.id}/process`,{method:'POST'}).catch(()=>{});
+    // Small stagger to avoid server flood
+    await new Promise(r=>setTimeout(r,500));
+  }
+  alert(`已触发 ${pending.length} 个条目的提炼，完成后刷新即可在 Graph 看到新概念`);
+  await ld();
+  renderGlimpseTimeline();
 }
 
 // ---------- Inline editing (contenteditable + htmlToMd on save) ----------
