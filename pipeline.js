@@ -205,4 +205,46 @@ async function runPipeline(episode, audioUrl, updateProgress, onProcess) {
   }
 }
 
-module.exports = { runPipeline, downloadAudio, transcribeAudio, extractNotes };
+// Generic skill-based extraction: takes a full prompt string and returns DeepSeek response
+function extractWithPrompt(prompt) {
+  return new Promise((resolve, reject) => {
+    const apiKey = process.env.DEEPSEEK_API_KEY || '';
+    if (!apiKey) return reject(new Error('DEEPSEEK_API_KEY not set'));
+    const body = JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 8000,
+      temperature: 0.3,
+    });
+    const req = https.request({
+      hostname: 'api.deepseek.com',
+      path: '/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Length': Buffer.byteLength(body),
+      },
+      timeout: 300000,
+    }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const content = json.choices?.[0]?.message?.content;
+          if (content && content.length > 100) resolve(content);
+          else reject(new Error(`DeepSeek empty response: ${data.slice(0, 300)}`));
+        } catch (e) {
+          reject(new Error(`DeepSeek parse error: ${e.message}`));
+        }
+      });
+    });
+    req.on('error', e => reject(new Error(`DeepSeek request error: ${e.message}`)));
+    req.on('timeout', () => { req.destroy(); reject(new Error('DeepSeek timeout (5min)')); });
+    req.write(body);
+    req.end();
+  });
+}
+
+module.exports = { runPipeline, downloadAudio, transcribeAudio, extractNotes, extractWithPrompt };
