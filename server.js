@@ -508,28 +508,50 @@ app.post('/api/notes/:id/process', requireAdmin, async (req, res) => {
   // Run async
   (async () => {
     try {
-      // Fetch lark content if needed (via lark-cli docs +fetch with the URL)
+      // Fetch lark content if needed — supports regular docs AND minutes
       if (note.source_type === 'lark' && !rawContent) {
-        noteJobs.set(id, { step: 'fetching', progress: 20, message: '通过 lark-cli 拉取飞书文档...' });
         const meta = JSON.parse(note.metadata || '{}');
         const larkUrl = meta.lark_url || note.source_ref;
-        if (!larkUrl) throw new Error('缺少飞书文档链接');
+        if (!larkUrl) throw new Error('缺少飞书链接');
+        const { execSync } = require('child_process');
+        const fsMod = require('fs');
+        const osMod = require('os');
+        const pathMod = require('path');
+        let newTitle = note.title;
         try {
-          const { execSync } = require('child_process');
-          const safe = larkUrl.replace(/"/g, '\\"');
-          const cmd = `lark-cli docs +fetch --doc "${safe}" --format pretty 2>/dev/null`;
-          rawContent = execSync(cmd, { timeout: 60000, encoding: 'utf-8', maxBuffer: 20 * 1024 * 1024 }).trim();
-          if (!rawContent || rawContent.length < 20) throw new Error('lark-cli 返回内容为空，请确认链接和授权');
-          // Try deriving a better title from the first non-empty markdown heading or line
-          let newTitle = note.title;
-          if (/^https?:\/\//.test(note.title)) {
-            const firstHead = rawContent.match(/^#+\s*(.+)/m);
-            const firstLine = rawContent.split('\n').find(l => l.trim().length > 0);
-            newTitle = (firstHead ? firstHead[1] : firstLine || note.title).trim().slice(0, 120);
+          if (/\/minutes\//.test(larkUrl)) {
+            // === 飞书妙记 ===
+            noteJobs.set(id, { step: 'fetching', progress: 20, message: '通过 lark-cli 拉取妙记逐字稿...' });
+            const mt = larkUrl.match(/\/minutes\/([A-Za-z0-9]+)/);
+            if (!mt) throw new Error('无法识别的 minutes URL');
+            const token = mt[1];
+            const tmpDir = fsMod.mkdtempSync(pathMod.join(osMod.tmpdir(), 'lark-min-'));
+            execSync(`lark-cli vc +notes --minute-tokens ${token} --output-dir . 2>&1`, { cwd: tmpDir, timeout: 180000, encoding: 'utf-8', maxBuffer: 20 * 1024 * 1024 });
+            const entries = fsMod.readdirSync(tmpDir);
+            const dir = entries.find(e => e.startsWith('artifact-'));
+            if (!dir) throw new Error('lark-cli 未返回 artifact 目录');
+            const tp = pathMod.join(tmpDir, dir, 'transcript.txt');
+            if (!fsMod.existsSync(tp)) throw new Error('未找到 transcript.txt');
+            rawContent = fsMod.readFileSync(tp, 'utf-8').trim();
+            // artifact-<title>-<token> → title
+            const titleMatch = dir.match(/^artifact-(.*)-[A-Za-z0-9]+$/);
+            if (titleMatch) newTitle = titleMatch[1];
+            try { fsMod.rmSync(tmpDir, { recursive: true, force: true }); } catch(e) {}
+          } else {
+            // === 普通飞书文档 ===
+            noteJobs.set(id, { step: 'fetching', progress: 20, message: '通过 lark-cli 拉取飞书文档...' });
+            const safe = larkUrl.replace(/"/g, '\\"');
+            rawContent = execSync(`lark-cli docs +fetch --doc "${safe}" --format pretty 2>/dev/null`, { timeout: 60000, encoding: 'utf-8', maxBuffer: 20 * 1024 * 1024 }).trim();
+            if (!rawContent || rawContent.length < 20) throw new Error('lark-cli 返回内容为空，请确认链接和授权');
+            if (/^https?:\/\//.test(note.title)) {
+              const firstHead = rawContent.match(/^#+\s*(.+)/m);
+              const firstLine = rawContent.split('\n').find(l => l.trim().length > 0);
+              newTitle = (firstHead ? firstHead[1] : firstLine || note.title).trim().slice(0, 120);
+            }
           }
           db.prepare('UPDATE notes SET raw_content=?, title=? WHERE id=?').run(rawContent, newTitle, id);
         } catch (e) {
-          throw new Error('飞书文档拉取失败：' + e.message);
+          throw new Error('飞书内容拉取失败：' + e.message);
         }
       }
 
