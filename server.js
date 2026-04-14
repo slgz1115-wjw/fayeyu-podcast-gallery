@@ -508,22 +508,28 @@ app.post('/api/notes/:id/process', requireAdmin, async (req, res) => {
   // Run async
   (async () => {
     try {
-      // Fetch lark content if needed
+      // Fetch lark content if needed (via lark-cli docs +fetch with the URL)
       if (note.source_type === 'lark' && !rawContent) {
-        noteJobs.set(id, { step: 'fetching', progress: 20, message: '从飞书拉取文档内容...' });
+        noteJobs.set(id, { step: 'fetching', progress: 20, message: '通过 lark-cli 拉取飞书文档...' });
         const meta = JSON.parse(note.metadata || '{}');
-        const token = meta.lark_token || note.source_ref;
-        if (token) {
-          try {
-            const { execSync } = require('child_process');
-            const docType = (meta.lark_type || 'DOCX').toLowerCase();
-            // Try docs +get for DOCX, or wiki +get for wiki nodes
-            const cmd = `lark-cli docs +get --token "${token}" --format md 2>/dev/null`;
-            rawContent = execSync(cmd, { timeout: 30000, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-            db.prepare('UPDATE notes SET raw_content=? WHERE id=?').run(rawContent, id);
-          } catch (e) {
-            throw new Error('飞书文档拉取失败：' + e.message);
+        const larkUrl = meta.lark_url || note.source_ref;
+        if (!larkUrl) throw new Error('缺少飞书文档链接');
+        try {
+          const { execSync } = require('child_process');
+          const safe = larkUrl.replace(/"/g, '\\"');
+          const cmd = `lark-cli docs +fetch --doc "${safe}" --format pretty 2>/dev/null`;
+          rawContent = execSync(cmd, { timeout: 60000, encoding: 'utf-8', maxBuffer: 20 * 1024 * 1024 }).trim();
+          if (!rawContent || rawContent.length < 20) throw new Error('lark-cli 返回内容为空，请确认链接和授权');
+          // Try deriving a better title from the first non-empty markdown heading or line
+          let newTitle = note.title;
+          if (/^https?:\/\//.test(note.title)) {
+            const firstHead = rawContent.match(/^#+\s*(.+)/m);
+            const firstLine = rawContent.split('\n').find(l => l.trim().length > 0);
+            newTitle = (firstHead ? firstHead[1] : firstLine || note.title).trim().slice(0, 120);
           }
+          db.prepare('UPDATE notes SET raw_content=?, title=? WHERE id=?').run(rawContent, newTitle, id);
+        } catch (e) {
+          throw new Error('飞书文档拉取失败：' + e.message);
         }
       }
 

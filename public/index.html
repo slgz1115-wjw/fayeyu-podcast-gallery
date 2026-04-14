@@ -1498,9 +1498,9 @@ function renderLarkSrc(){
   const nonPod=skills.filter(s=>s.category!=='podcast');
   return`
     <div class="src-section">
-      <h4>搜索飞书文档</h4>
-      <input class="src-input" id="lark-q" placeholder="输入关键词..." oninput="dsLark()">
-      <div class="srs" id="lark-sr"></div>
+      <h4>粘贴飞书文档链接</h4>
+      <input class="src-input" id="lark-url" placeholder="https://fayeyu.feishu.cn/wiki/...  或  /docx/...">
+      <div style="font-size:10px;color:var(--ink3);margin-top:6px;">服务端通过 <code style="color:var(--p)">lark-cli docs +fetch</code> 拉取内容，需要你已完成 <code style="color:var(--p)">lark-cli auth login</code>。</div>
     </div>
     <div class="src-section">
       <h4>选择提炼 Skill</h4>
@@ -1510,7 +1510,7 @@ function renderLarkSrc(){
       <div id="lark-skill-desc" style="font-size:10px;color:var(--ink3);margin-top:6px;">${nonPod[0]?.description||''}</div>
     </div>
     <div class="src-section">
-      <button class="bt bp" style="width:100%;padding:13px;font-size:13px;" id="lark-btn" onclick="addLark()" disabled>先选择文档</button>
+      <button class="bt bp" style="width:100%;padding:13px;font-size:13px;" onclick="addLarkByUrl()">&#9889; 拉取并提炼</button>
     </div>`;
 }
 
@@ -1571,34 +1571,16 @@ function addOneoff(){
 async function dp(id,nm){if(!confirm(`取消订阅「${nm}」？`))return;await api(`/podcasts/${id}`,{method:'DELETE'});if(CF===id)CF=null;await ld();}
 async function doRefresh(b){b.disabled=true;b.textContent='...';const r=await api('/refresh',{method:'POST'});b.disabled=false;b.innerHTML='&#8635; 刷新 RSS';await ld();if(r.new_episodes>0)alert(`发现 ${r.new_episodes} 个新剧集！`);}
 
-// Lark drawer
-function dsLark(){clearTimeout(_larkTimer);_larkTimer=setTimeout(doLarkSearch,500);}
-async function doLarkSearch(){
-  const q=document.getElementById('lark-q').value.trim();
-  const el=document.getElementById('lark-sr');
-  if(!q){el.innerHTML='';return;}
-  el.innerHTML='<div class="sl">搜索中...</div>';
-  try{
-    const r=await api(`/lark/search?q=${encodeURIComponent(q)}`);
-    if(!r.length){el.innerHTML='<div class="sl">未找到</div>';return;}
-    el.innerHTML=r.map((d,i)=>`<div class="si" id="lsi-${i}" onclick="selLark(${i})"><div class="iph">📄</div><div><div class="sn">${d.title}</div><div class="sa">${d.type} · ${d.token.substring(0,18)}...</div></div></div>`).join('');
-    window._larkSr=r;
-  }catch(e){el.innerHTML='<div class="sl">搜索失败，请确认 lark-cli 已授权</div>';}
-}
-function selLark(i){
-  _selectedLark=window._larkSr[i];
-  document.querySelectorAll('#lark-sr .si').forEach((el,j)=>el.classList.toggle('sel',j===i));
-  const btn=document.getElementById('lark-btn');
-  btn.disabled=false;btn.innerHTML='&#9889; 添加并提炼';
-}
-async function addLark(){
-  if(!_selectedLark)return;
+// Lark: paste URL → server uses lark-cli docs +fetch
+async function addLarkByUrl(){
+  const url=document.getElementById('lark-url').value.trim();
+  if(!url){alert('请粘贴飞书文档链接');return;}
+  if(!/^https?:\/\//.test(url)){alert('请输入完整的 https 链接');return;}
   const skillId=parseInt(document.getElementById('lark-skill').value)||null;
-  const selected=_selectedLark;_selectedLark=null;
   closeSrc();
   const r=await api('/notes',{method:'POST',body:JSON.stringify({
-    source_type:'lark',source_ref:selected.token,title:selected.title,skill_id:skillId,
-    metadata:{lark_token:selected.token,lark_type:selected.type,lark_url:selected.url||''}
+    source_type:'lark',source_ref:url,title:url,skill_id:skillId,
+    metadata:{lark_url:url}
   })});
   await ld();
   if(r&&r.id){await processNote(r.id);}
