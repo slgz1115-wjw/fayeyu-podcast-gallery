@@ -488,6 +488,14 @@ body::before{
 </div></div>
 
 <script>
+window.addEventListener('error',function(ev){
+  var d=document.getElementById('__err')||(function(){var x=document.createElement('div');x.id='__err';x.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#300;color:#fff;font:12px monospace;padding:10px;z-index:9999;max-height:50vh;overflow:auto;white-space:pre-wrap;';document.body&&document.body.appendChild(x);return x;})();
+  d.textContent+='[ERR] '+(ev.message||ev.error)+' @ '+ev.filename+':'+ev.lineno+'\n';
+});
+window.addEventListener('unhandledrejection',function(ev){
+  var d=document.getElementById('__err')||(function(){var x=document.createElement('div');x.id='__err';x.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#003;color:#fff;font:12px monospace;padding:10px;z-index:9999;max-height:50vh;overflow:auto;white-space:pre-wrap;';document.body&&document.body.appendChild(x);return x;})();
+  d.textContent+='[REJ] '+(ev.reason&&(ev.reason.stack||ev.reason.message||ev.reason))+'\n';
+});
 let P=[],E=[],V='library',CF=null,ST=null,PT={},termDB={},kgEdits={},isAdmin=false,authToken=localStorage.getItem('authToken')||'';
 let skills=[],notes=[];
 let _selectedLark=null,_larkTimer=null,_selectedSearch=null,_sT=null;
