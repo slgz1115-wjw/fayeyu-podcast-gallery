@@ -133,7 +133,7 @@ body::before{
   background:linear-gradient(90deg,transparent,var(--o),transparent);
 }
 .auth-slot{position:absolute;right:32px;top:28px;font-size:11px;color:var(--ink3);z-index:60;}
-.auth-slot a{color:var(--o);cursor:pointer;margin-left:6px;}
+.auth-slot a{color:var(--o);cursor:pointer;margin-left:6px;display:inline-block;padding:10px 8px;text-decoration:none;}
 .auth-slot .dot{color:var(--gn);margin-right:4px;}
 
 /* ===== CONTENT ===== */
@@ -516,8 +516,8 @@ async function ld(){
 function updateAuthUI(){
   const ab=document.getElementById('authBtn');
   if(ab)ab.innerHTML=isAdmin
-    ?'<span class="dot">●</span>管理员 <a onclick="logout()">登出</a>'
-    :'<span style="color:var(--ink4)">○</span> 访客 <a onclick="showLoginModal()">登录</a>';
+    ?'<span class="dot">●</span>管理员 <a href="javascript:void(0)" onclick="logout()">登出</a>'
+    :'<span style="color:var(--ink4)">○</span> 访客 <a href="javascript:void(0)" onclick="showLoginModal()">登录</a>';
 }
 function showLoginModal(){sm('lm');setTimeout(()=>document.getElementById('lpw').focus(),60);}
 async function doLogin(){
@@ -998,7 +998,7 @@ function renderGlimpseTimeline(){
   gs.forEach(g=>{const ym=g.title.slice(0,7);if(!groups[ym])groups[ym]=[];groups[ym].push(g);});
   const months=Object.keys(groups).sort();
 
-  let html=`<div class="glimpse-nav">${months.map(m=>`<a onclick="document.getElementById('g-${m}').scrollIntoView({behavior:'smooth',block:'start'})">${m} · ${groups[m].length}</a>`).join('')}</div>`;
+  let html=`<div class="glimpse-nav">${months.map(m=>`<a href="javascript:void(0)" onclick="document.getElementById('g-${m}').scrollIntoView({behavior:'smooth',block:'start'})">${m} · ${groups[m].length}</a>`).join('')}</div>`;
 
   for(const m of months){
     html+=`<h2 id="g-${m}" class="glimpse-month">${m}<span class="count">${groups[m].length} 条</span></h2>`;
