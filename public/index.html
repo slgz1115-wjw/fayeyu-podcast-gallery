@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
 <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/mammoth@1.9.0/mammoth.browser.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
 <style>
 /* fonts moved to non-blocking <link> in <head> */
 :root{
@@ -864,8 +865,7 @@ function rc(ep){
         ${ep.status==='new'&&isAdmin?`<button class="bt bp bs" onclick="event.stopPropagation();sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="event.stopPropagation();ut(${ep.id})">&#128196; 手动上传</button><button class="bt bou bs" onclick="event.stopPropagation();us(${ep.id},'skipped')">跳过</button>`:''}
         ${ep.status==='processing'&&isAdmin?`<button class="bt brd bs" onclick="event.stopPropagation();ab(${ep.id})">&#9724; 终止</button>`:''}
         ${ep.status==='skipped'&&isAdmin?`<button class="bt bp bs" onclick="event.stopPropagation();sp(${ep.id})">&#9889; 自动提炼</button>`:''}
-        ${ep.status==='done'?`<button class="bt bp bs" onclick="event.stopPropagation();od(${ep.id})">&#128196; 查看笔记</button>${isAdmin?`<button class="bt bou bs" onclick="event.stopPropagation();reExtract(${ep.id})">&#128260; 重新提炼</button>`:''}`:''}
-
+        ${ep.status==='done'?`<button class="bt bp bs" onclick="event.stopPropagation();od(${ep.id})">&#128196; 查看笔记</button><button class="bt bou bs" onclick="event.stopPropagation();reExtract(${ep.id})">&#128260; 重新提炼</button>`:''}
         ${ep.link?`<a href="${ep.link}" target="_blank" class="bt bou bs" onclick="event.stopPropagation()" style="text-decoration:none">&#128279;</a>`:''}
       </div></div></div></div>`;
 }
@@ -901,7 +901,8 @@ function odn(id){openDrawer('note',id);}
 async function openDrawer(type,id){
   const t=type==='ep'?E.find(e=>e.id===id):notes.find(x=>x.id===id);
   if(!t)return;
-  _cur={type,id,comments:[],selColor:'yellow',editing:false};
+  const rawMd=type==='ep'?(t.notes||''):(t.content||t.raw_content||'');
+  _cur={type,id,raw:rawMd,comments:[],selColor:'yellow',editing:false};
   document.getElementById('dt').textContent=type==='ep'?t.title:t.title;
   document.getElementById('drw').classList.add('open');
   document.getElementById('dov').classList.add('open');
@@ -946,6 +947,7 @@ function renderDrawerBody(){
 
   // Actions bar
   const actions=document.getElementById('dactions');
+  const dlBtns=_cur.raw?`<button class="bt bou bs" onclick="dlCurMd()">&#11123; MD</button><button class="bt bou bs" onclick="dlCurDocx()">&#11123; DOCX</button>`:'';
   if(isAdmin){
     actions.style.display='flex';
     if(_cur.type==='note'){
@@ -954,12 +956,15 @@ function renderDrawerBody(){
         <button class="bt bou bs" onclick="processNote(${_cur.id})">&#9889; 重新提炼</button>
         <button class="bt bou bs" onclick="editNoteTitle(${_cur.id})">&#9998; 标题</button>
         <button class="bt bou bs" onclick="replaceNoteFile(${_cur.id})">&#8644; 替换</button>
-        <button class="bt brd bs" onclick="delNote(${_cur.id})">&#10005; 删除</button>`;
+        <button class="bt brd bs" onclick="delNote(${_cur.id})">&#10005; 删除</button>${dlBtns}`;
     }else{
       const ep=item;
-      actions.innerHTML=ep.notes?`<button class="bt bp bs" onclick="beginInlineEdit()">&#9998; 编辑笔记</button>`:'';
+      actions.innerHTML=(ep.notes?`<button class="bt bp bs" onclick="beginInlineEdit()">&#9998; 编辑笔记</button>`:'')+dlBtns;
     }
-  }else actions.style.display='none';
+  }else{
+    actions.style.display=_cur.raw?'flex':'none';
+    actions.innerHTML=dlBtns;
+  }
 }
 
 function cd(){
@@ -1085,6 +1090,26 @@ function downloadMd(filename,content){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=filename;a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function downloadDocx(filename,mdContent){
+  const htmlBody=marked.parse(mdContent||'');
+  const fullHtml=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;line-height:1.8;color:#222;} blockquote{border-left:3px solid #ccc;padding-left:12px;color:#555;margin:12px 0;} h1{font-size:22px;} h2{font-size:18px;margin-top:24px;border-bottom:1px solid #eee;padding-bottom:6px;} h3{font-size:15px;} code{background:#f4f4f4;padding:2px 5px;border-radius:3px;font-size:13px;} strong{font-weight:700;}</style></head><body>${htmlBody}</body></html>`;
+  const blob=htmlDocx.asBlob(fullHtml);
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename.replace(/\.md$/,'')+'.docx';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function dlCurMd(){
+  if(!_cur||!_cur.raw)return;
+  const item=_cur.type==='ep'?E.find(e=>e.id===_cur.id):notes.find(x=>x.id===_cur.id);
+  const title=(item?item.title:'note').replace(/[\/\\:*?"<>|]/g,'_');
+  downloadMd(title+'.md',_cur.raw);
+}
+function dlCurDocx(){
+  if(!_cur||!_cur.raw)return;
+  const item=_cur.type==='ep'?E.find(e=>e.id===_cur.id):notes.find(x=>x.id===_cur.id);
+  const title=(item?item.title:'note').replace(/[\/\\:*?"<>|]/g,'_');
+  downloadDocx(title,_cur.raw);
 }
 function exportGlimpse(id){
   const g=notes.find(n=>n.id===id);if(!g)return;
