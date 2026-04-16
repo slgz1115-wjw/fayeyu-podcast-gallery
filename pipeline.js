@@ -201,7 +201,7 @@ ${truncated}`;
     const body = JSON.stringify({
       model: 'deepseek-chat',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 16384,
+      max_tokens: 8192,
       temperature: 0.3,
     });
 
