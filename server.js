@@ -216,6 +216,33 @@ app.get('/api/jobs/:id', (req, res) => {
   res.json({ step: 'idle', progress: 0 });
 });
 
+// Re-extract: re-run note extraction on existing transcript without re-downloading/re-transcribing
+app.post('/api/episodes/:id/reextract', requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const ep = db.prepare(`SELECT e.*, p.name as podcast_name FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.id=?`).get(id);
+  if (!ep) return res.status(404).json({ error: 'not found' });
+  if (!ep.transcript) return res.status(400).json({ error: '该集没有逐字稿，无法重新提炼' });
+
+  db.prepare('UPDATE episodes SET status=? WHERE id=?').run('processing', id);
+
+  (async () => {
+    try {
+      jobs.set(id, { step: 'extracting', progress: 60, message: '重新提炼笔记中（新版 prompt）...' });
+      const notes = await extractNotes(ep.transcript, ep.podcast_name, ep.title);
+      db.prepare('UPDATE episodes SET notes=?, status=? WHERE id=?').run(notes, 'done', id);
+      jobs.set(id, { step: 'done', progress: 100, message: '重新提炼完成！' });
+      setTimeout(() => jobs.delete(id), 60000);
+    } catch (err) {
+      console.error(`Re-extract error for ep ${id}:`, err);
+      jobs.set(id, { step: 'error', progress: 0, message: `重新提炼失败: ${err.message}` });
+      db.prepare('UPDATE episodes SET status=? WHERE id=?').run('done', id);
+      setTimeout(() => jobs.delete(id), 120000);
+    }
+  })();
+
+  res.json({ ok: true, message: '重新提炼已启动' });
+});
+
 // --- Knowledge Graph edits ---
 db.exec(`CREATE TABLE IF NOT EXISTS kg_edits (
   term TEXT PRIMARY KEY,

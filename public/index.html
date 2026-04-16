@@ -864,7 +864,8 @@ function rc(ep){
         ${ep.status==='new'&&isAdmin?`<button class="bt bp bs" onclick="event.stopPropagation();sp(${ep.id})">&#9889; 自动提炼</button><button class="bt bou bs" onclick="event.stopPropagation();ut(${ep.id})">&#128196; 手动上传</button><button class="bt bou bs" onclick="event.stopPropagation();us(${ep.id},'skipped')">跳过</button>`:''}
         ${ep.status==='processing'&&isAdmin?`<button class="bt brd bs" onclick="event.stopPropagation();ab(${ep.id})">&#9724; 终止</button>`:''}
         ${ep.status==='skipped'&&isAdmin?`<button class="bt bp bs" onclick="event.stopPropagation();sp(${ep.id})">&#9889; 自动提炼</button>`:''}
-        ${ep.status==='done'?`<button class="bt bp bs" onclick="event.stopPropagation();od(${ep.id})">&#128196; 查看笔记</button>`:''}
+        ${ep.status==='done'?`<button class="bt bp bs" onclick="event.stopPropagation();od(${ep.id})">&#128196; 查看笔记</button>${isAdmin?`<button class="bt bou bs" onclick="event.stopPropagation();reExtract(${ep.id})">&#128260; 重新提炼</button>`:''}`:''}
+
         ${ep.link?`<a href="${ep.link}" target="_blank" class="bt bou bs" onclick="event.stopPropagation()" style="text-decoration:none">&#128279;</a>`:''}
       </div></div></div></div>`;
 }
@@ -1326,6 +1327,7 @@ document.addEventListener('click',e=>{
 async function us(id,s){await api(`/episodes/${id}`,{method:'PATCH',body:JSON.stringify({status:s})});await ld();}
 async function ab(id){await api(`/episodes/${id}/abort`,{method:'POST'});if(PT[id]){clearInterval(PT[id]);delete PT[id];}await ld();}
 async function sp(id){await api(`/episodes/${id}/process`,{method:'POST'});await ld();poll(id);}
+async function reExtract(id){if(!confirm('用新版 prompt 重新提炼笔记？（逐字稿保留，仅重跑提炼）'))return;await api(`/episodes/${id}/reextract`,{method:'POST'});await ld();poll(id);}
 async function toggleStar(id){await api(`/episodes/${id}/star`,{method:'POST'});await ld();}
 async function toggleStarN(id){const n=notes.find(x=>x.id===id);await api(`/notes/${id}`,{method:'PATCH',body:JSON.stringify({starred:n&&n.starred?0:1})});await ld();}
 
