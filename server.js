@@ -329,13 +329,13 @@ const skillCount = db.prepare('SELECT COUNT(*) as c FROM skills').get().c;
 if (skillCount === 0) {
   const seedSkill = db.prepare('INSERT INTO skills (name, category, description, prompt_template, variables) VALUES (?,?,?,?,?)');
   seedSkill.run('播客三模块提炼', 'podcast', '播客逐字稿专用：反共识金句 + 核心观点体系 + 专业名词词典',
-    `你是一位专业的播客内容分析师。请对以下播客逐字稿进行深度提炼，输出三个模块：\n\n## 模块A：反共识金句\n提取说话人最具洞察力的原话（3-8句），用引号标注。\n\n## 模块B：核心观点体系\n梳理说话人的核心命题和论证逻辑，层次分明地展开。\n\n## 模块C：专业名词解释词典\n列出涉及的专业术语，格式：**[术语]**（English）定义...\n\n---\n播客：{{podcast_name}}\n标题：{{title}}\n逐字稿：\n{{transcript}}`,
+    `你是一位专业的播客内容分析师。请对以下播客逐字稿进行深度提炼，输出三个模块：\n\n## 模块A：反共识金句\n提取说话人最具洞察力的原话（3-8句），用引号标注。\n\n## 模块B：核心观点体系\n梳理说话人的核心命题和论证逻辑，层次分明地展开。\n\n## 专业名词解释词典\n列出涉及的专业术语，格式：**[术语]**（English）定义...\n\n⚠️ 标题「## 专业名词解释词典」是下游系统解析锚点，必须一字不差输出。\n\n---\n播客：{{podcast_name}}\n标题：{{title}}\n逐字稿：\n{{transcript}}`,
     JSON.stringify(['podcast_name', 'title', 'transcript']));
   seedSkill.run('高密度对谈逻辑梳理', 'transcript', '适用于会议录音、访谈、讨论等口语化文字记录',
     `# 底层逻辑学习\n\n将口语化文字记录梳理为结构化文字版，产出三层：\n\n## 第一层：底层知识体系\n抽离可穿越周期的知识框架。\n\n## 第二层：逻辑梳理版\n按话题重组，理顺推理链条，去噪音。\n\n## 第三层：总结\n核心议题 + 逻辑闭环。\n\n---\n标题：{{title}}\n内容：\n{{content}}`,
     JSON.stringify(['title', 'content']));
   seedSkill.run('结构化内容提炼', 'article', '适用于文章、网页、文档等已成文内容',
-    `请对以下内容进行结构化提炼：\n\n## 核心观点\n提取主要论点和结论。\n\n## 关键信息\n重要的数据、事实、引用。\n\n## 专业名词解释词典\n**[术语]**（English）定义...\n\n---\n标题：{{title}}\n内容：\n{{content}}`,
+    `请对以下内容进行结构化提炼：\n\n## 核心观点\n提取主要论点和结论。\n\n## 关键信息\n重要的数据、事实、引用。\n\n## 专业名词解释词典\n列出涉及的专业术语，格式：**[术语]**（English）定义...\n\n⚠️ 标题「## 专业名词解释词典」是下游系统解析锚点，必须一字不差输出。\n\n---\n标题：{{title}}\n内容：\n{{content}}`,
     JSON.stringify(['title', 'content']));
 }
 
