@@ -1371,7 +1371,6 @@ function setSelColor(c){
 
 document.addEventListener('mouseup',e=>{
   if(!_cur||_cur.editing)return;
-  if(!isAdmin){hideSelTb();return;}
   const body=document.getElementById('db-content');
   if(!body||!body.contains(e.target)){hideSelTb();return;}
   setTimeout(()=>{
@@ -1410,12 +1409,14 @@ function getPreSelectionText(root,range){
 
 function addCommentFromSelection(){
   if(!_cur||!_cur.pendingSel)return;
+  if(!isAdmin){hideSelTb();showLoginModal();return;}
   hideSelTb();
   openCmtPop({quote:_cur.pendingSel.text,occurrence:_cur.pendingSel.occurrence,color:_cur.selColor,comment:''});
 }
 
 async function addToGlimpseFromSelection(){
   if(!_cur||!_cur.pendingSel){return;}
+  if(!isAdmin){hideSelTb();showLoginModal();return;}
   const text=_cur.pendingSel.text;
   hideSelTb();
   // Resolve source title and id

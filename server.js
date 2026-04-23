@@ -18,7 +18,21 @@ if (!fs.existsSync(TRANSCRIPTS_DIR)) fs.mkdirSync(TRANSCRIPTS_DIR);
 
 // --- Auth ---
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'fayeyu2026';
+// Sessions are persisted to SQLite so pm2 restarts don't log everyone out.
+// We keep an in-memory Map as a read cache, backed by the `sessions` table.
 const sessions = new Map(); // token -> { created, expires }
+
+// Create sessions table + restore non-expired rows into the Map.
+db.exec(`CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  created INTEGER NOT NULL,
+  expires INTEGER NOT NULL
+)`);
+// Clear expired rows, then load the rest.
+db.prepare('DELETE FROM sessions WHERE expires < ?').run(Date.now());
+const restoredSessions = db.prepare('SELECT token, created, expires FROM sessions').all();
+restoredSessions.forEach(s => sessions.set(s.token, { created: s.created, expires: s.expires }));
+if (restoredSessions.length) console.log(`[auth] restored ${restoredSessions.length} session(s) from DB`);
 
 function generateToken() { return crypto.randomBytes(32).toString('hex'); }
 function isAdmin(req) {
@@ -26,7 +40,11 @@ function isAdmin(req) {
   if (!token) return false;
   const s = sessions.get(token);
   if (!s) return false;
-  if (Date.now() > s.expires) { sessions.delete(token); return false; }
+  if (Date.now() > s.expires) {
+    sessions.delete(token);
+    try { db.prepare('DELETE FROM sessions WHERE token=?').run(token); } catch(e) {}
+    return false;
+  }
   return true;
 }
 function requireAdmin(req, res, next) {
@@ -38,7 +56,10 @@ function requireAdmin(req, res, next) {
 app.post('/api/auth/login', express.json(), (req, res) => {
   if (req.body.password === ADMIN_PASSWORD) {
     const token = generateToken();
-    sessions.set(token, { created: Date.now(), expires: Date.now() + 7 * 24 * 60 * 60 * 1000 }); // 7 days
+    const created = Date.now();
+    const expires = created + 7 * 24 * 60 * 60 * 1000; // 7 days
+    sessions.set(token, { created, expires });
+    try { db.prepare('INSERT INTO sessions (token, created, expires) VALUES (?, ?, ?)').run(token, created, expires); } catch(e) { console.error('[auth] persist session failed:', e.message); }
     res.json({ ok: true, token });
   } else {
     res.status(401).json({ error: 'wrong password' });
