@@ -58,6 +58,81 @@ body::before{
   color:var(--ink3);font-weight:300;margin-bottom:40px;
 }
 .hero .tagline b{color:var(--o);font-weight:400;font-style:italic;text-transform:none;letter-spacing:1px;font-family:'Cormorant Garamond',serif;font-size:15px;margin-right:8px;}
+
+/* Ask Murmur box */
+.ask-box{
+  max-width:640px;margin:0 auto 36px;display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--line2);
+  border-radius:100px;padding:6px 8px 6px 22px;
+  transition:all 0.25s ease;backdrop-filter:blur(8px);
+}
+.ask-box:focus-within{border-color:var(--o);box-shadow:0 8px 30px rgba(255,106,0,0.15),0 0 0 3px rgba(255,106,0,0.08);background:rgba(255,255,255,0.06);}
+.ask-box .ask-ic{color:var(--o);font-size:16px;flex-shrink:0;}
+.ask-box input{
+  flex:1;background:transparent;border:none;outline:none;color:var(--ink);
+  font-size:14px;font-family:inherit;padding:12px 4px;
+}
+.ask-box input::placeholder{color:var(--ink3);font-size:13px;}
+.ask-btn{
+  width:42px;height:42px;border-radius:100px;border:none;cursor:pointer;
+  background:var(--o);color:#fff;font-size:16px;flex-shrink:0;
+  transition:all 0.2s;display:flex;align-items:center;justify-content:center;
+}
+.ask-btn:hover{background:#ff7a1a;transform:scale(1.05);}
+.ask-btn:disabled{background:var(--ink3);cursor:not-allowed;transform:none;}
+
+/* Ask answer panel */
+.ask-panel{
+  max-width:920px;margin:0 auto 40px;padding:28px 36px;
+  background:linear-gradient(180deg,rgba(255,106,0,0.04),rgba(255,255,255,0.02));
+  border:1px solid var(--line2);border-radius:16px;
+  animation:askSlide 0.35s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes askSlide{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.ask-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line);}
+.ask-q-row{display:flex;gap:12px;align-items:flex-start;flex:1;}
+.ask-q-label{font-size:10px;font-weight:600;color:var(--o);background:rgba(255,106,0,0.12);padding:4px 10px;border-radius:4px;letter-spacing:1px;flex-shrink:0;margin-top:2px;}
+.ask-q{font-size:16px;line-height:1.6;color:var(--ink);font-weight:500;}
+.ask-close{background:none;border:none;color:var(--ink3);font-size:16px;cursor:pointer;padding:6px 10px;border-radius:6px;transition:all 0.15s;flex-shrink:0;}
+.ask-close:hover{background:rgba(255,255,255,0.06);color:var(--ink);}
+.ask-status{font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0;display:flex;align-items:center;gap:10px;}
+.ask-status:empty{display:none;}
+.ask-status::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--o);animation:pulse 1.2s infinite;}
+.ask-status.err::before{background:#f87171;animation:none;}
+@keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
+.ask-answer{font-size:14px;line-height:1.85;color:var(--ink);}
+.ask-answer h1,.ask-answer h2,.ask-answer h3{color:var(--ink);margin-top:20px;margin-bottom:10px;}
+.ask-answer h2{font-size:17px;padding-bottom:6px;border-bottom:1px solid var(--line);}
+.ask-answer h3{font-size:15px;}
+.ask-answer p{margin:10px 0;}
+.ask-answer ul,.ask-answer ol{padding-left:24px;margin:10px 0;}
+.ask-answer li{margin:4px 0;}
+.ask-answer blockquote{border-left:3px solid var(--o);padding:4px 14px;margin:12px 0;color:var(--ink2);background:rgba(255,106,0,0.04);}
+.ask-answer code{background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:3px;font-size:12px;}
+.ask-answer strong{color:var(--ink);}
+.cit-chip{
+  display:inline-flex;align-items:center;gap:3px;
+  background:rgba(255,106,0,0.14);color:var(--o);
+  padding:1px 7px;border-radius:4px;font-size:11px;font-weight:500;
+  cursor:pointer;margin:0 2px;vertical-align:1px;
+  border:1px solid rgba(255,106,0,0.25);transition:all 0.15s;
+  text-decoration:none;
+}
+.cit-chip:hover{background:rgba(255,106,0,0.28);transform:translateY(-1px);}
+.cit-chip.cit-note{background:rgba(167,139,250,0.14);color:var(--p);border-color:rgba(167,139,250,0.25);}
+.cit-chip.cit-note:hover{background:rgba(167,139,250,0.28);}
+.ask-cits{margin-top:24px;padding-top:18px;border-top:1px solid var(--line);}
+.ask-cits:empty{display:none;}
+.ask-cits h4{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.cit-item{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;margin:6px 0;
+  background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:8px;
+  cursor:pointer;transition:all 0.15s;
+}
+.cit-item:hover{background:rgba(255,255,255,0.06);border-color:var(--o);transform:translateX(4px);}
+.cit-title{flex:1;font-size:13px;color:var(--ink);font-weight:500;}
+.cit-pod{font-size:11px;color:var(--ink3);padding:2px 8px;background:rgba(255,255,255,0.04);border-radius:4px;}
+
 .pills{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
 .pill{
   display:inline-flex;align-items:center;gap:10px;
@@ -406,6 +481,12 @@ body::before{
   <section class="hero">
     <div class="logo">murmur</div>
     <div class="tagline"><b>低语</b>knowledge softly gathered</div>
+    <div class="ask-box">
+      <span class="ask-ic">&#9734;</span>
+      <input id="ask-input" placeholder="问问 Murmur 的知识库，比如：Coding 为什么是 AGI 的第二幕？"
+             onkeydown="if(event.key==='Enter')doAsk()" maxlength="500">
+      <button class="ask-btn" onclick="doAsk()" title="提问">&#10148;</button>
+    </div>
     <div class="pills">
       <button class="pill pill-podcast" onclick="openSrc('podcast')">
         <span class="pill-ic">&#127911;</span> 播客
@@ -421,6 +502,19 @@ body::before{
         <span class="pill-ic">&#10024;</span> 惊鸿一瞥
       </button>
     </div>
+  </section>
+
+  <section class="ask-panel" id="ask-panel" style="display:none;">
+    <div class="ask-header">
+      <div class="ask-q-row">
+        <span class="ask-q-label">你问</span>
+        <div class="ask-q" id="ask-q"></div>
+      </div>
+      <button class="ask-close" onclick="closeAsk()" title="关闭">&#10005;</button>
+    </div>
+    <div class="ask-status" id="ask-status"></div>
+    <div class="ask-answer" id="ask-answer"></div>
+    <div class="ask-cits" id="ask-cits"></div>
   </section>
 
   <nav class="tabs">
@@ -1083,6 +1177,61 @@ async function delGlimpse(id){
   await api(`/notes/${id}`,{method:'DELETE'});
   await ld();
   renderGlimpseTimeline();
+}
+
+// ========== Ask Murmur ==========
+let _asking=false;
+async function doAsk(){
+  if(_asking)return;
+  const inp=document.getElementById('ask-input');
+  const q=(inp.value||'').trim();
+  if(!q){inp.focus();return;}
+  _asking=true;
+  const panel=document.getElementById('ask-panel');
+  const qEl=document.getElementById('ask-q');
+  const st=document.getElementById('ask-status');
+  const ans=document.getElementById('ask-answer');
+  const cits=document.getElementById('ask-cits');
+  const btn=document.querySelector('.ask-btn');
+  qEl.textContent=q;
+  panel.style.display='block';
+  st.className='ask-status';
+  st.textContent='Murmur 正在翻阅笔记，搜索相关论述...';
+  ans.innerHTML='';
+  cits.innerHTML='';
+  btn.disabled=true;
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+  try{
+    const r=await api('/ask',{method:'POST',body:JSON.stringify({question:q})});
+    if(r.error){throw new Error(r.error);}
+    let html=marked.parse(r.answer||'');
+    // Replace [EP_ID=X] / [NOTE_ID=X] with clickable chips
+    html=html.replace(/\[EP_ID=(\d+)\]/g,(_,id)=>
+      `<a class="cit-chip cit-ep" onclick="event.preventDefault();od(${id})" href="#"># ${id}</a>`);
+    html=html.replace(/\[NOTE_ID=(\d+)\]/g,(_,id)=>
+      `<a class="cit-chip cit-note" onclick="event.preventDefault();odn(${id})" href="#">笔记 ${id}</a>`);
+    ans.innerHTML=html;
+    st.textContent='';
+    // Citation list at bottom
+    if(r.citations&&r.citations.length){
+      cits.innerHTML='<h4>&#128279; 涉及 '+r.citations.length+' 条笔记</h4>'+
+        r.citations.map(c=>{
+          const act=c.type==='ep'?`od(${c.id})`:`odn(${c.id})`;
+          const podLabel=c.podcast_name?`<span class="cit-pod">${c.podcast_name}</span>`:'';
+          return `<div class="cit-item" onclick="${act}"><span class="cit-title">${c.title}</span>${podLabel}</div>`;
+        }).join('');
+    }
+  }catch(e){
+    st.className='ask-status err';
+    st.textContent='提问失败: '+(e.message||e);
+  }finally{
+    _asking=false;
+    btn.disabled=false;
+  }
+}
+function closeAsk(){
+  document.getElementById('ask-panel').style.display='none';
+  document.getElementById('ask-input').value='';
 }
 
 function downloadMd(filename,content){

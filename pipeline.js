@@ -296,7 +296,7 @@ function extractWithPrompt(prompt) {
         try {
           const json = JSON.parse(data);
           const content = json.choices?.[0]?.message?.content;
-          if (content && content.length > 100) resolve(content);
+          if (content && content.trim().length > 0) resolve(content);
           else reject(new Error(`DeepSeek empty response: ${data.slice(0, 300)}`));
         } catch (e) {
           reject(new Error(`DeepSeek parse error: ${e.message}`));

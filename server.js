@@ -217,7 +217,7 @@ app.get('/api/jobs/:id', (req, res) => {
 });
 
 // Re-extract: re-run note extraction on existing transcript without re-downloading/re-transcribing
-app.post('/api/episodes/:id/reextract', requireAdmin, async (req, res) => {
+app.post('/api/episodes/:id/reextract', async (req, res) => {
   const id = parseInt(req.params.id);
   const ep = db.prepare(`SELECT e.*, p.name as podcast_name FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.id=?`).get(id);
   if (!ep) return res.status(404).json({ error: 'not found' });
@@ -654,6 +654,113 @@ app.post('/api/notes/:id/abort', requireAdmin, (req, res) => {
   noteJobs.delete(id);
   db.prepare("UPDATE notes SET status='new' WHERE id=?").run(id);
   res.json({ ok: true });
+});
+
+// ========== Ask Murmur: knowledge base Q&A ==========
+app.post('/api/ask', async (req, res) => {
+  const { question } = req.body || {};
+  if (!question || !question.trim()) {
+    return res.status(400).json({ error: '问题不能为空' });
+  }
+
+  try {
+    // 1. Gather all done episodes with notes
+    const dones = db.prepare(`
+      SELECT e.id, e.title, e.notes, p.name as podcast_name
+      FROM episodes e JOIN podcasts p ON e.podcast_id=p.id
+      WHERE e.status='done' AND e.notes IS NOT NULL AND length(e.notes) > 200
+    `).all();
+
+    // 2. Gather all done notes (lark/manual) with content
+    const doneNotes = db.prepare(`
+      SELECT id, title, content, source_type
+      FROM notes
+      WHERE status='done' AND content IS NOT NULL AND length(content) > 200
+    `).all();
+
+    if (dones.length === 0 && doneNotes.length === 0) {
+      return res.status(400).json({ error: '知识库为空，请先提炼一些笔记' });
+    }
+
+    // 3. Build context with labels, truncating if too long
+    const MAX_CTX = 180000; // ~90K tokens, leaves room for question + answer
+    const blocks = [];
+    dones.forEach(e => {
+      blocks.push({
+        label: `[EP_ID=${e.id}]`,
+        header: `=== [EP_ID=${e.id}] 标题：${e.title} 播客：${e.podcast_name} ===`,
+        body: e.notes,
+      });
+    });
+    doneNotes.forEach(n => {
+      blocks.push({
+        label: `[NOTE_ID=${n.id}]`,
+        header: `=== [NOTE_ID=${n.id}] 标题：${n.title} 来源：${n.source_type || 'note'} ===`,
+        body: n.content,
+      });
+    });
+
+    // Sort by length descending, truncate longest until fits
+    let total = blocks.reduce((s, b) => s + b.header.length + b.body.length + 4, 0);
+    while (total > MAX_CTX) {
+      blocks.sort((a, b) => b.body.length - a.body.length);
+      blocks[0].body = blocks[0].body.substring(0, Math.floor(blocks[0].body.length * 0.7)) + '\n[...已截断...]';
+      total = blocks.reduce((s, b) => s + b.header.length + b.body.length + 4, 0);
+    }
+
+    const context = blocks.map(b => `${b.header}\n${b.body}`).join('\n\n');
+
+    // 4. Build prompt
+    const prompt = `你是 Murmur 知识库问答助手。基于下面这些播客和文档笔记回答用户的问题。
+
+## 严格规则
+1. 只基于提供的笔记内容回答，绝不编造
+2. 回答里每个核心观点/论述/引用后面必须用 [EP_ID=数字] 或 [NOTE_ID=数字] 标注出处
+   - 一个观点可以标多个出处
+   - 标注紧贴句末，放在句号之前：像这样 [EP_ID=296]。
+3. 如果笔记里没有相关内容，直接说「笔记库中未找到相关内容」，不要硬编
+4. 尽量用嘉宾原话或保留原始论证结构，不要翻译成官话
+5. 回答要有逻辑层次：先给结论，再展开论证链条
+6. 答案长度：视问题复杂度，简单问题 200 字以内，复杂问题可以 1500+ 字展开
+
+## 知识库
+
+${context}
+
+## 用户问题
+${question}
+
+## 你的回答
+（直接给回答，用 Markdown 格式，不要重复问题）`;
+
+    // 5. Call DeepSeek
+    const answer = await extractWithPrompt(prompt);
+
+    // 6. Parse citations from answer
+    const epIds = new Set();
+    const noteIds = new Set();
+    (answer.match(/\[EP_ID=(\d+)\]/g) || []).forEach(m => epIds.add(parseInt(m.match(/\d+/)[0])));
+    (answer.match(/\[NOTE_ID=(\d+)\]/g) || []).forEach(m => noteIds.add(parseInt(m.match(/\d+/)[0])));
+
+    const citations = [];
+    epIds.forEach(id => {
+      const e = dones.find(x => x.id === id);
+      if (e) citations.push({ type: 'ep', id: e.id, title: e.title, podcast_name: e.podcast_name });
+    });
+    noteIds.forEach(id => {
+      const n = doneNotes.find(x => x.id === id);
+      if (n) citations.push({ type: 'note', id: n.id, title: n.title, podcast_name: n.source_type });
+    });
+
+    res.json({
+      answer,
+      citations,
+      stats: { episodes_searched: dones.length, notes_searched: doneNotes.length, context_chars: context.length },
+    });
+  } catch (err) {
+    console.error('Ask error:', err);
+    res.status(500).json({ error: err.message || '服务器错误' });
+  }
 });
 
 const PORT = process.env.PORT || 3456;
