@@ -661,6 +661,41 @@ app.get('/api/notes/:id/job', (req, res) => {
   res.json({ step: 'idle', progress: 0 });
 });
 
+// Append a quote to today's 惊鸿一瞥 (glimpse) entry. Creates the entry if it doesn't exist.
+app.post('/api/glimpse/append', requireAdmin, (req, res) => {
+  const { text, source_type, source_id, source_title } = req.body || {};
+  if (!text || !text.trim()) return res.status(400).json({ error: 'text required' });
+
+  // Today's date in YYYY-MM-DD using local timezone
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  // Find or create today's glimpse note
+  let glimpse = db.prepare(`SELECT id, content FROM notes WHERE source_type='glimpse' AND title=?`).get(today);
+  let action = 'appended';
+  if (!glimpse) {
+    const info = db.prepare(`
+      INSERT INTO notes (source_type, title, content, status, metadata)
+      VALUES ('glimpse', ?, ?, 'done', '{}')
+    `).run(today, `# ${today}\n\n`);
+    glimpse = { id: info.lastInsertRowid, content: `# ${today}\n\n` };
+    action = 'created';
+  }
+
+  // Build bullet with attribution link
+  let attribution = '';
+  if (source_id && source_title) {
+    const tag = source_type === 'ep' ? `[EP_ID=${source_id}]` : `[NOTE_ID=${source_id}]`;
+    attribution = `\n  — 摘自《${source_title}》 ${tag}`;
+  }
+  const cleanText = text.trim().replace(/\n+/g, ' ');
+  const bullet = `- ${cleanText}${attribution}\n`;
+
+  const newContent = (glimpse.content || '').replace(/\s*$/, '') + '\n' + bullet;
+  db.prepare(`UPDATE notes SET content=?, updated_at=datetime('now') WHERE id=?`).run(newContent, glimpse.id);
+  res.json({ ok: true, glimpse_id: glimpse.id, date: today, action });
+});
+
 app.post('/api/notes/:id/abort', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
   noteJobs.delete(id);
