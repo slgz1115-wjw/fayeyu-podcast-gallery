@@ -471,6 +471,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS comments (
   color TEXT DEFAULT 'yellow',
   created_at TEXT DEFAULT (datetime('now'))
 )`);
+// Add kind column to distinguish comments ('comment') from critical thoughts ('thought').
+try { db.exec(`ALTER TABLE comments ADD COLUMN kind TEXT DEFAULT 'comment'`); } catch(e) {}
 
 app.get('/api/comments', (req, res) => {
   const { target_type, target_id } = req.query;
@@ -479,12 +481,28 @@ app.get('/api/comments', (req, res) => {
   res.json(rows);
 });
 app.post('/api/comments', requireAdmin, (req, res) => {
-  const { target_type, target_id, quote, occurrence, comment, color } = req.body;
+  const { target_type, target_id, quote, occurrence, comment, color, kind } = req.body;
   if (!target_type || !target_id || !quote) return res.status(400).json({ error: 'missing fields' });
-  const info = db.prepare('INSERT INTO comments (target_type, target_id, quote, occurrence, comment, color) VALUES (?,?,?,?,?,?)').run(
-    target_type, parseInt(target_id), quote, occurrence || 0, comment || '', color || 'yellow'
+  const info = db.prepare('INSERT INTO comments (target_type, target_id, quote, occurrence, comment, color, kind) VALUES (?,?,?,?,?,?,?)').run(
+    target_type, parseInt(target_id), quote, occurrence || 0, comment || '', color || 'yellow', kind === 'thought' ? 'thought' : 'comment'
   );
   res.json({ id: info.lastInsertRowid, ok: true });
+});
+
+// Aggregate all thoughts across all notes/episodes — for the 思考集 view
+app.get('/api/thoughts', (req, res) => {
+  const rows = db.prepare(`
+    SELECT c.*,
+      CASE WHEN c.target_type='episode' THEN e.title ELSE n.title END as source_title,
+      CASE WHEN c.target_type='episode' THEN p.name ELSE n.source_type END as source_label
+    FROM comments c
+    LEFT JOIN episodes e ON c.target_type='episode' AND e.id=c.target_id
+    LEFT JOIN podcasts p ON e.podcast_id=p.id
+    LEFT JOIN notes n ON c.target_type='note' AND n.id=c.target_id
+    WHERE c.kind='thought'
+    ORDER BY c.created_at DESC
+  `).all();
+  res.json(rows);
 });
 app.patch('/api/comments/:id', requireAdmin, (req, res) => {
   const { comment, color } = req.body;
