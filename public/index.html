@@ -40,14 +40,43 @@
   --w08:rgba(255,255,255,0.08);
   --w12:rgba(255,255,255,0.12);
   --w15:rgba(255,255,255,0.15);
+  --tab-bg:rgba(13,13,13,0.85); /* sticky tab bar backdrop */
+  --logo-grad:linear-gradient(180deg,#fff 0%,#f5f0eb 40%,#c9b89a 100%);
 }
 
-/* Light mode: follow system preference */
+/* Light theme variables — applied either via system preference or explicit override */
+.theme-light{
+  --bg:#faf8f3;            /* warm off-white, matches the lamp-light theme */
+  --bg2:#ffffff;
+  --bg3:#f3eee5;           /* paper / drawer surface */
+  --line:rgba(0,0,0,0.08);
+  --line2:rgba(0,0,0,0.14);
+  --ink:#1a1a1a;
+  --ink2:rgba(26,26,26,0.74);
+  --ink3:rgba(26,26,26,0.52);
+  --ink4:rgba(26,26,26,0.30);
+  --op:rgba(255,106,0,0.10);
+  --pl:rgba(167,139,250,0.16);
+  --w02:rgba(0,0,0,0.025);
+  --w03:rgba(0,0,0,0.04);
+  --w04:rgba(0,0,0,0.05);
+  --w05:rgba(0,0,0,0.06);
+  --w06:rgba(0,0,0,0.075);
+  --w08:rgba(0,0,0,0.10);
+  --w12:rgba(0,0,0,0.14);
+  --w15:rgba(0,0,0,0.18);
+  --tab-bg:rgba(250,248,243,0.88);
+  --logo-grad:linear-gradient(180deg,#1a1a1a 0%,#3a2a18 50%,#7a5a30 100%);
+}
+
+/* Apply light theme: explicit override OR system preference (when not forced dark) */
+:root[data-theme="light"]{ /* placeholder; populated via class on <html> below */ }
+
 @media (prefers-color-scheme: light){
-  :root{
-    --bg:#faf8f3;            /* warm off-white, matches the lamp-light theme */
+  html:not([data-theme="dark"]){
+    --bg:#faf8f3;
     --bg2:#ffffff;
-    --bg3:#f3eee5;           /* paper / drawer surface */
+    --bg3:#f3eee5;
     --line:rgba(0,0,0,0.08);
     --line2:rgba(0,0,0,0.14);
     --ink:#1a1a1a;
@@ -64,12 +93,42 @@
     --w08:rgba(0,0,0,0.10);
     --w12:rgba(0,0,0,0.14);
     --w15:rgba(0,0,0,0.18);
+    --tab-bg:rgba(250,248,243,0.88);
+    --logo-grad:linear-gradient(180deg,#1a1a1a 0%,#3a2a18 50%,#7a5a30 100%);
   }
-  /* Softer hero glow in light mode (the dark version is too saturated) */
-  body::before{
+  html:not([data-theme="dark"]) body::before{
     background:radial-gradient(ellipse 900px 520px at 50% -10%,rgba(255,106,0,0.08),transparent 60%),
-               radial-gradient(ellipse 600px 400px at 85% 20%,rgba(167,139,250,0.05),transparent 55%) !important;
+               radial-gradient(ellipse 600px 400px at 85% 20%,rgba(167,139,250,0.05),transparent 55%);
   }
+}
+
+/* Explicit light override (regardless of system) */
+html[data-theme="light"]{
+  --bg:#faf8f3;
+  --bg2:#ffffff;
+  --bg3:#f3eee5;
+  --line:rgba(0,0,0,0.08);
+  --line2:rgba(0,0,0,0.14);
+  --ink:#1a1a1a;
+  --ink2:rgba(26,26,26,0.74);
+  --ink3:rgba(26,26,26,0.52);
+  --ink4:rgba(26,26,26,0.30);
+  --op:rgba(255,106,0,0.10);
+  --pl:rgba(167,139,250,0.16);
+  --w02:rgba(0,0,0,0.025);
+  --w03:rgba(0,0,0,0.04);
+  --w04:rgba(0,0,0,0.05);
+  --w05:rgba(0,0,0,0.06);
+  --w06:rgba(0,0,0,0.075);
+  --w08:rgba(0,0,0,0.10);
+  --w12:rgba(0,0,0,0.14);
+  --w15:rgba(0,0,0,0.18);
+  --tab-bg:rgba(250,248,243,0.88);
+  --logo-grad:linear-gradient(180deg,#1a1a1a 0%,#3a2a18 50%,#7a5a30 100%);
+}
+html[data-theme="light"] body::before{
+  background:radial-gradient(ellipse 900px 520px at 50% -10%,rgba(255,106,0,0.08),transparent 60%),
+             radial-gradient(ellipse 600px 400px at 85% 20%,rgba(167,139,250,0.05),transparent 55%);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{background:var(--bg);color:var(--ink);font-family:'Inter','Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;}
@@ -85,9 +144,9 @@ body::before{
 .hero{padding:88px 0 48px;text-align:center;position:relative;}
 .hero .logo{
   font-family:'Cormorant Garamond',Georgia,serif;
-  font-size:116px;font-weight:300;font-style:italic;
+  font-size:116px;font-weight:400;font-style:italic;
   letter-spacing:-2px;line-height:0.9;
-  background:linear-gradient(180deg,#fff 0%,#f5f0eb 40%,#c9b89a 100%);
+  background:var(--logo-grad);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   text-shadow:0 0 60px rgba(255,106,0,0.08);
   margin-bottom:14px;
@@ -235,7 +294,7 @@ body::before{
   padding:20px 0 4px;margin-top:8px;
   border-bottom:1px solid var(--line);
   position:sticky;top:0;z-index:50;
-  background:rgba(13,13,13,0.85);backdrop-filter:blur(12px);
+  background:var(--tab-bg);backdrop-filter:blur(12px);
 }
 .tab{
   padding:12px 22px;background:none;border:none;
@@ -252,6 +311,10 @@ body::before{
 .auth-slot{position:absolute;right:32px;top:28px;font-size:11px;color:var(--ink3);z-index:60;}
 .auth-slot a{color:var(--o);cursor:pointer;margin-left:6px;display:inline-block;padding:10px 8px;text-decoration:none;}
 .auth-slot .dot{color:var(--gn);margin-right:4px;}
+.theme-slot{position:absolute;right:130px;top:24px;z-index:60;display:flex;gap:4px;background:var(--w03);border:1px solid var(--line);border-radius:100px;padding:3px;}
+.theme-slot button{background:none;border:none;cursor:pointer;font-family:inherit;font-size:11px;color:var(--ink3);padding:5px 11px;border-radius:100px;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px;}
+.theme-slot button:hover{color:var(--ink);}
+.theme-slot button.act{background:var(--o);color:#fff;}
 
 /* ===== CONTENT ===== */
 .content{padding:32px 0 40px;}
@@ -542,11 +605,14 @@ body::before{
   .pill{padding:10px 18px;font-size:12px;}
   .drw{width:100vw;right:-100vw;}
   .auth-slot{right:18px;top:18px;}
+  .theme-slot{right:120px;top:14px;padding:2px;}
+  .theme-slot button{font-size:10px;padding:4px 8px;}
   .tab{font-size:16px;padding:10px 14px;}
 }
 </style>
 </head>
 <body>
+<div class="theme-slot" id="themeBtn" title="切换主题"></div>
 <div class="auth-slot" id="authBtn"></div>
 
 <div class="page">
@@ -670,6 +736,25 @@ window.addEventListener('unhandledrejection',function(ev){
   d.textContent+='[REJ] '+(ev.reason&&(ev.reason.stack||ev.reason.message||ev.reason))+'\n';
 });
 let P=[],E=[],V='library',CF=null,ST=null,PT={},termDB={},kgEdits={},isAdmin=false,authToken=localStorage.getItem('authToken')||'';
+
+// ========== Theme toggle (auto / light / dark) ==========
+function applyTheme(mode){
+  // mode: 'auto' | 'light' | 'dark'
+  const html=document.documentElement;
+  if(mode==='auto'){html.removeAttribute('data-theme');}
+  else{html.setAttribute('data-theme',mode);}
+  localStorage.setItem('theme',mode);
+  renderThemeBtn();
+}
+function renderThemeBtn(){
+  const el=document.getElementById('themeBtn');if(!el)return;
+  const mode=localStorage.getItem('theme')||'auto';
+  const opts=[['auto','&#9881;','跟随'],['light','&#9728;','浅色'],['dark','&#9789;','深色']];
+  el.innerHTML=opts.map(([k,ic,lbl])=>`<button class="${mode===k?'act':''}" onclick="applyTheme('${k}')" title="${lbl}模式"><span style="font-size:13px;">${ic}</span><span class="th-lbl">${lbl}</span></button>`).join('');
+}
+// Apply saved theme synchronously to avoid flash
+(function(){const saved=localStorage.getItem('theme')||'auto';if(saved!=='auto')document.documentElement.setAttribute('data-theme',saved);})();
+document.addEventListener('DOMContentLoaded',renderThemeBtn);
 let skills=[],notes=[];
 let _selectedLark=null,_larkTimer=null,_selectedSearch=null,_sT=null;
 
