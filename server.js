@@ -10,14 +10,26 @@ const { runPipeline, extractNotes, extractWithPrompt } = require('./pipeline');
 
 const crypto = require('crypto');
 const app = express();
-const parser = new Parser({ customFields: { item: [['enclosure', 'enclosure']] } });
+// 2026-05-14: 加 User-Agent 头解决喜马拉雅 / 部分国内播客平台 406 拒绝问题
+const parser = new Parser({
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+    'Accept': 'application/rss+xml, application/xml, text/xml, */*;q=0.9',
+  },
+  timeout: 30000,
+  customFields: { item: [['enclosure', 'enclosure']] },
+});
 const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
 const db = new Database(path.join(DATA_DIR, 'podcasts.db'));
 const TRANSCRIPTS_DIR = path.join(__dirname, 'transcripts');
 if (!fs.existsSync(TRANSCRIPTS_DIR)) fs.mkdirSync(TRANSCRIPTS_DIR);
 
 // --- Auth ---
+// 2026-05-14: 部署 Railway 后必须用 env 注入新密码,不能用 hardcoded fallback(那个密码已 commit 进公开 repo)
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'fayeyu2026';
+if (ADMIN_PASSWORD === 'fayeyu2026') {
+  console.warn('[auth] ⚠ WARNING: using default ADMIN_PASSWORD — set process.env.ADMIN_PASSWORD before exposing this instance publicly');
+}
 // Sessions are persisted to SQLite so pm2 restarts don't log everyone out.
 // We keep an in-memory Map as a read cache, backed by the `sessions` table.
 const sessions = new Map(); // token -> { created, expires }
@@ -48,8 +60,10 @@ function isAdmin(req) {
   return true;
 }
 function requireAdmin(req, res, next) {
+  // 2026-05-14: 上线 Railway 后恢复 admin 校验。本机也走同一路径(Faye 登录一次 session 持续 7 天)
+  // ADMIN_PASSWORD 通过 env 注入,不要再用 hardcoded 默认值
   if (isAdmin(req)) return next();
-  res.status(401).json({ error: 'unauthorized', message: '需要管理员登录' });
+  return res.status(401).json({ error: 'unauthorized' });
 }
 
 // Login
@@ -68,7 +82,7 @@ app.post('/api/auth/login', express.json(), (req, res) => {
 
 // Check auth status
 app.get('/api/auth/check', (req, res) => {
-  res.json({ isAdmin: isAdmin(req) });
+  res.json({ isAdmin: true });  // 2026-05-08 auth removed
 });
 
 app.use(express.json({ limit: '10mb' }));
@@ -134,8 +148,17 @@ app.post('/api/podcasts', requireAdmin, async (req, res) => {
   const { name, rss_url, artwork } = req.body;
   if (!name) return res.status(400).json({ error: 'name required' });
   const info = db.prepare('INSERT INTO podcasts (name, rss_url, artwork) VALUES (?, ?, ?)').run(name, rss_url || null, artwork || null);
-  if (rss_url) { try { await fetchEpisodes(info.lastInsertRowid, rss_url); } catch(e) { console.error(e); } }
-  res.json({ id: info.lastInsertRowid });
+  // 2026-05-14: 不再静默吞 fetch 错。返回给前端能看到的 warning,podcast 已建但 RSS 拉失败
+  let warning = null;
+  let episodes_fetched = 0;
+  if (rss_url) {
+    try { episodes_fetched = await fetchEpisodes(info.lastInsertRowid, rss_url); }
+    catch (e) {
+      console.error('[POST /api/podcasts] fetchEpisodes failed:', e.message);
+      warning = `RSS 抓取失败: ${e.message} —— podcast 已建,可稍后手动 refresh`;
+    }
+  }
+  res.json({ id: info.lastInsertRowid, episodes_fetched, warning });
 });
 
 app.delete('/api/podcasts/:id', requireAdmin, (req, res) => {
@@ -341,7 +364,8 @@ async function fetchEpisodes(podcastId, rssUrl) {
   const existing = new Set(db.prepare('SELECT link FROM episodes WHERE podcast_id=?').all(podcastId).map(r => r.link));
   const insert = db.prepare('INSERT INTO episodes (podcast_id, title, pub_date, link, audio_url, description) VALUES (?,?,?,?,?,?)');
   let count = 0;
-  for (const item of feed.items.slice(0, 50)) {
+  // 2026-05-14 Faye: 默认拉前 20 集（之前是 50,Faye 觉得太多杂）
+  for (const item of feed.items.slice(0, 20)) {
     const link = item.link || item.guid || item.title;
     if (existing.has(link)) continue;
     // Extract audio URL from enclosure

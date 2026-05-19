@@ -7,7 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..600;1,300..600&family=Italianno&family=Noto+Serif+SC:wght@300;400;500;700&family=Sorts+Mill+Goudy:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
 <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/mammoth@1.9.0/mammoth.browser.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
@@ -138,7 +138,7 @@ body::before{
   background:radial-gradient(ellipse 900px 520px at 50% -10%,rgba(255,106,0,0.13),transparent 60%),
              radial-gradient(ellipse 600px 400px at 85% 20%,rgba(167,139,250,0.06),transparent 55%);
 }
-.page{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 32px 120px;}
+.page{position:relative;z-index:1;max-width:100%;margin:0 auto;padding:0 32px 120px;}
 
 /* ===== HERO ===== */
 .hero{padding:88px 0 48px;text-align:center;position:relative;}
@@ -159,7 +159,7 @@ body::before{
 
 /* Ask Murmur box */
 .ask-box{
-  max-width:640px;margin:0 auto 36px;display:flex;align-items:center;gap:10px;
+  max-width:100%;margin:0 auto 36px;display:flex;align-items:center;gap:10px;
   background:var(--w04);border:1px solid var(--line2);
   border-radius:100px;padding:6px 8px 6px 22px;
   transition:all 0.25s ease;backdrop-filter:blur(8px);
@@ -181,7 +181,7 @@ body::before{
 
 /* Ask answer panel */
 .ask-panel{
-  max-width:920px;margin:0 auto 40px;padding:28px 36px;
+  max-width:100%;margin:0 auto 40px;padding:28px 36px;
   background:linear-gradient(180deg,rgba(255,106,0,0.04),var(--w02));
   border:1px solid var(--line2);border-radius:16px;
   animation:askSlide 0.35s cubic-bezier(0.22,1,0.36,1);
@@ -308,9 +308,9 @@ body::before{
   content:'';position:absolute;left:22px;right:22px;bottom:-1px;height:2px;
   background:linear-gradient(90deg,transparent,var(--o),transparent);
 }
-.auth-slot{position:absolute;right:32px;top:28px;font-size:11px;color:var(--ink3);z-index:60;}
-.auth-slot a{color:var(--o);cursor:pointer;margin-left:6px;display:inline-block;padding:10px 8px;text-decoration:none;}
-.auth-slot .dot{color:var(--gn);margin-right:4px;}
+.auth-slot{display:none !important}
+
+
 .theme-slot{position:absolute;right:130px;top:24px;z-index:60;display:flex;gap:4px;background:var(--w03);border:1px solid var(--line);border-radius:100px;padding:3px;}
 .theme-slot button{background:none;border:none;cursor:pointer;font-family:inherit;font-size:11px;color:var(--ink3);padding:5px 11px;border-radius:100px;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px;}
 .theme-slot button:hover{color:var(--ink);}
@@ -604,16 +604,56 @@ body::before{
   .pills{gap:8px;}
   .pill{padding:10px 18px;font-size:12px;}
   .drw{width:100vw;right:-100vw;}
-  .auth-slot{right:18px;top:18px;}
+  .auth-slot{display:none !important}
   .theme-slot{right:120px;top:14px;padding:2px;}
   .theme-slot button{font-size:10px;padding:4px 8px;}
   .tab{font-size:16px;padding:10px 14px;}
+}
+
+/* ===== 2026-05-08 (Faye): Botanical Specimen theme override for Murmur ===== */
+:root, .theme-dark, .theme-light{
+  --bg:#f5ecd9 !important; --bg2:#ebdfc3 !important; --bg3:#e3d2af !important;
+  --ink:#2b2418 !important; --ink2:rgba(43,36,24,0.80) !important; --ink3:rgba(43,36,24,0.55) !important; --ink4:rgba(43,36,24,0.30) !important;
+  --o:#a03515 !important; --ol:#c44a23 !important; --op:rgba(160,53,21,0.10) !important;
+  --p:#4a5a3e !important; --pl:rgba(74,90,62,0.12) !important;
+  --gn:#4a5a3e !important; --rd:#a03515 !important; --yl:#8b6c1a !important;
+  --line:rgba(191,176,148,0.55) !important; --line2:rgba(191,176,148,0.85) !important;
+  --gold:#8b4a2a !important; --moss:#6e7a52 !important;
+  --f-botanical:'Cormorant Garamond','Sorts Mill Goudy','Noto Serif SC',Georgia,serif;
+  --f-script:'Italianno',cursive;
+}
+html, body{
+  font-family:var(--f-botanical) !important;
+  background:var(--bg) !important; color:var(--ink) !important;
+}
+body::before{
+  content:'' !important; position:fixed !important; inset:0 !important; pointer-events:none !important; z-index:1 !important;
+  opacity:0.5; mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' seed='5'/><feColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.45 0 0 0 0 0.3 0 0 0 0.4 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>") !important;
+}
+h1,h2,h3,h4,h5{font-family:var(--f-botanical) !important;font-style:italic;font-weight:300}
+.btn,.btn-primary{font-family:var(--f-botanical) !important;font-style:italic;letter-spacing:0.04em;border-radius:2px}
+/* 顶 brand 用花体 */
+.brand,.logo,.title{font-family:var(--f-botanical) !important;font-style:italic;color:var(--ink-warm)}
+/* End botanical override */
+
+/* 2026-05-09: Garden+ iframe 嵌入时,内容跟随 iframe 宽度 */
+/* 2026-05-09 v1.8 — 无条件撑满(Garden+ iframe 嵌入时不分屏宽) */
+.page { max-width: 100% !important; padding: 0 24px 80px !important; }
+.hero { max-width: 100% !important; padding: 48px 0 24px !important; }
+.ask-box { max-width: 100% !important; }
+.ask-panel { max-width: 100% !important; }
+.pills, .tabs { max-width: 100% !important; }
+.lib-grid, .library, .lib-toolbar, .lib-list, .lib-rows { max-width: 100% !important; width: 100% !important; }
+.lib-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important; }
+body > .page > * { max-width: 100% !important; }
+@media (max-width: 700px) {
+  .page { padding: 0 16px 60px !important; }
 }
 </style>
 </head>
 <body>
 <div class="theme-slot" id="themeBtn" title="切换主题"></div>
-<div class="auth-slot" id="authBtn"></div>
 
 <div class="page">
   <section class="hero">
@@ -716,15 +756,7 @@ body::before{
 <!-- Term popover -->
 <div class="term-pop" id="tpop"></div>
 
-<!-- Login modal (kept as modal for quick dismiss) -->
-<div class="mb" id="lm"><div class="ml">
-  <h3>管理员登录</h3>
-  <p style="font-size:11px;color:var(--ink3);margin-bottom:18px;text-align:center;">登录后可添加来源 · 提炼笔记 · 编辑知识图谱</p>
-  <div class="fg"><input type="password" id="lpw" placeholder="输入管理员密码" onkeydown="if(event.key==='Enter')doLogin()" style="text-align:center;font-size:15px;padding:14px;"></div>
-  <div id="lerr" style="color:var(--rd);font-size:11px;margin-bottom:8px;text-align:center;"></div>
-  <div class="ma" style="justify-content:center;"><button class="bt bp" style="width:100%;padding:12px;" onclick="doLogin()">登录</button></div>
-  <p style="font-size:10px;color:var(--ink4);margin-top:14px;text-align:center;">访客可以自由浏览所有内容</p>
-</div></div>
+<!-- Login modal removed 2026-05-08 -->
 
 <script>
 window.addEventListener('error',function(ev){
@@ -735,7 +767,7 @@ window.addEventListener('unhandledrejection',function(ev){
   var d=document.getElementById('__err')||(function(){var x=document.createElement('div');x.id='__err';x.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#003;color:#fff;font:12px monospace;padding:10px;z-index:9999;max-height:50vh;overflow:auto;white-space:pre-wrap;';document.body&&document.body.appendChild(x);return x;})();
   d.textContent+='[REJ] '+(ev.reason&&(ev.reason.stack||ev.reason.message||ev.reason))+'\n';
 });
-let P=[],E=[],V='library',CF=null,ST=null,PT={},termDB={},kgEdits={},isAdmin=false,authToken=localStorage.getItem('authToken')||'';
+let P=[],E=[],V='library',CF=null,ST=null,PT={},termDB={},kgEdits={},isAdmin=true,authToken='';
 
 // ========== Theme toggle (auto / light / dark) ==========
 function applyTheme(mode){
@@ -762,14 +794,11 @@ async function api(p,o={}){
   const headers={'Content-Type':'application/json'};
   if(authToken)headers['X-Auth-Token']=authToken;
   const r=await fetch('/api'+p,{headers,...o});
-  if(r.status===401){showLoginModal();throw new Error('unauthorized');}
+  if(r.status===401){console.warn('401 ignored — auth disabled');}
   return r.json();
 }
 async function ld(){
-  try{
-    const auth=await fetch('/api/auth/check',{headers:authToken?{'X-Auth-Token':authToken}:{}}).then(r=>r.json());
-    isAdmin=auth.isAdmin;
-  }catch(e){isAdmin=false;}
+  isAdmin=true;
   updateAuthUI();
   [P,E,skills,notes]=await Promise.all([api('/podcasts'),api('/episodes'),api('/skills'),api('/notes')]);
   const editsArr=await api('/kg/edits');
@@ -779,22 +808,10 @@ async function ld(){
   // refresh open source drawer if any
   if(window._openSrc)renderSrc(window._openSrc);
 }
-function updateAuthUI(){
-  const ab=document.getElementById('authBtn');
-  if(ab)ab.innerHTML=isAdmin
-    ?'<span class="dot">●</span>管理员 <a href="javascript:void(0)" onclick="logout()">登出</a>'
-    :'<span style="color:var(--ink4)">○</span> 访客 <a href="javascript:void(0)" onclick="showLoginModal()">登录</a>';
-}
-function showLoginModal(){sm('lm');setTimeout(()=>document.getElementById('lpw').focus(),60);}
-async function doLogin(){
-  const pw=document.getElementById('lpw').value;
-  try{
-    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})}).then(r=>r.json());
-    if(r.token){authToken=r.token;localStorage.setItem('authToken',authToken);hm('lm');await ld();}
-    else{document.getElementById('lerr').textContent='密码错误';}
-  }catch(e){document.getElementById('lerr').textContent='登录失败';}
-}
-function logout(){authToken='';localStorage.removeItem('authToken');isAdmin=false;ld();}
+function updateAuthUI(){/* auth UI disabled 2026-05-08 */}
+function showLoginModal(){/* disabled */}
+async function doLogin(){/* disabled */}
+function logout(){/* disabled — auth removed */}
 
 function updatePillCounts(){
   const pendE=E.filter(e=>e.status==='new'||e.status==='processing').length;
@@ -978,25 +995,91 @@ function newSkill(){
 }
 
 // ========== KNOWLEDGE GRAPH ==========
+// Six curated categories. A concept is included only if it matches a keyword in
+// one of these subcategories OR has strong conceptual markers (theory/effect/law/etc.).
 const TAXONOMY={
-  "底层原理":{icon:"🔬",color:"#6366F1",subs:{"数学与逻辑":{kw:["贝叶斯","概率","统计","博弈","纳什","奥卡姆","信息论","熵","马尔可夫","蒙特卡洛","梯度","凸优化","拉格朗日","傅里叶","线性代数","矩阵","向量"]},"物理与复杂系统":{kw:["热力学","混沌","复杂系统","涌现","相变","临界","耗散","反馈","控制论","熵增"]},"哲学与认知":{kw:["存在主义","荒诞","现象学","认知","启发式","偏见","范式","库恩","波普尔","证伪","第一性原理","演绎","归纳","还原论"]}}},
-  "AI 基础理论":{icon:"🧠",color:"#8B5CF6",subs:{"模型架构":{kw:["架构","Transformer","注意力","attention","layer","MoE","encoder","decoder","神经网络","卷积","循环","扩散"]},"训练范式":{kw:["训练","学习","优化","强化学习","预训练","微调","fine-tune","reward","self-play","蒸馏","对齐","RLHF"]},"能力扩展":{kw:["scaling","扩展","涌现","AGI","通用智能","推理时","compute","多模态","上下文"]}}},
-  "AI 工程":{icon:"⚙️",color:"#EF4444",subs:{"硬件与算力":{kw:["GPU","芯片","CUDA","Triton","TPU","算力","显存","FP8","FP16","量化","并行","集群"]},"系统与协议":{kw:["框架","部署","推理","协议","MCP","benchmark","pipeline","infra","基础设施","编译器"]}}},
-  "AI 应用":{icon:"🤖",color:"#10B981",subs:{"智能体与自动化":{kw:["agent","智能体","自动化","工具调用","任务规划","执行","agentic","编排","workflow"]},"具身智能":{kw:["具身","机器人","视觉","感知","物理","world model","VLA","动作","遥操作","端到端"]}}},
-  "商业与战略":{icon:"🚀",color:"#F59E0B",subs:{"商业模式":{kw:["商业","收入","ARR","飞轮","PMF","SaaS","订阅","变现","规模","网络效应","POD","供应链","柔性","DTC","毛利","客单价","LTV","CAC","复购"]},"竞争与资本":{kw:["护城河","壁垒","竞争","融资","估值","IPO","上市","风投","VC","红利","窗口期"]},"运营与增长":{kw:["ROI","NPS","SOP","转化率","留存","DAU","MAU","增长","漏斗","用户","运营","获客","私域","流量"]}}},
-  "经济与金融":{icon:"📈",color:"#3B82F6",subs:{"经济学原理":{kw:["马太效应","长尾","供需","边际","博弈论","外部性","机会成本","沉没成本","规模经济","比较优势","通胀","利率","货币","财富效应","FOMO","羊群","锚定","禀赋效应","损失厌恶"]},"投资与交易":{kw:["期权","量化","对冲","交易","alpha","策略","收益","风险","套利","杠杆"]}}}
+  "底层逻辑":{icon:"🔬",color:"#6366F1",subs:{
+    "数学与逻辑":{kw:["贝叶斯","概率","统计","博弈论","纳什","奥卡姆","信息论","熵","马尔可夫","蒙特卡洛","梯度","凸优化","线性代数","矩阵","向量","数学","逻辑"]},
+    "物理与复杂系统":{kw:["热力学","混沌","复杂系统","涌现","相变","临界","耗散","反馈","控制论","熵增","非线性","系统论"]},
+    "哲学与科学方法":{kw:["存在主义","荒诞","现象学","范式","库恩","波普尔","证伪","第一性原理","演绎","归纳","还原论","本体论","认识论","奥卡姆剃刀"]},
+  }},
+  "经济运行":{icon:"📈",color:"#3B82F6",subs:{
+    "经济学原理":{kw:["马太效应","长尾","边际","外部性","机会成本","沉没成本","规模经济","比较优势","通胀","利率","货币","财富效应","囚徒困境","公地悲剧","柠檬市场","信号理论","白领通缩"]},
+    "金融与市场":{kw:["期权","量化","对冲","alpha","套利","杠杆","ARR","市盈率","DCF","估值","CAPM","效率市场","行为金融"]},
+    "宏观与产业":{kw:["产业链","供需","通缩","产能","商品化","价值链","渠道","品牌","贸易","地缘"]},
+  }},
+  "AI 技术赛道":{icon:"🤖",color:"#10B981",subs:{
+    "模型与算法":{kw:["transformer","注意力","attention","moe","mixture of experts","encoder","decoder","神经网络","卷积","循环","扩散","架构","rlhf","预训练","微调","fine-tune","reward","蒸馏","reinforcement","对齐","alignment","scaling law","推理","emergence","frontier model","推理模型","test-time","compute","多模态","奇点","agi","general intelligence"]},
+    "Agent 与应用":{kw:["agent","智能体","coding agent","react框架","tool use","工具调用","任务规划","agentic","编排","workflow","personal agent","memory","记忆层","信任分层","trust delegation","subagent","harness","trajectory","推理时"]},
+    "工程与基建":{kw:["gpu","芯片","cuda","triton","tpu","算力","显存","fp8","fp16","量化","并行","集群","mcp","推理优化","mlsys","推理引擎","推理框架","基础设施"]},
+  }},
+  "商业与产品策略":{icon:"🚀",color:"#F59E0B",subs:{
+    "商业模式与竞争":{kw:["护城河","壁垒","pmf","saas","订阅","变现","网络效应","平台","双边市场","last mile","商业模式","build once","dtc","ugc","飞轮","二八","赢家通吃"]},
+    "产品与战略":{kw:["差异化","定位","用户体验","ux","nps","留存","dau","mau","转化率","diminishing return","elegance filter","附着式","垂直深耕","通用路线"]},
+  }},
+  "思维方法与认知偏差":{icon:"💡",color:"#A78BFA",subs:{
+    "思维框架":{kw:["第一性原理","mental model","心智模型","金字塔原理","系统二","系统一","be water","奥卡姆剃刀","元认知","横向思维"]},
+    "认知偏差":{kw:["锚定效应","禀赋效应","损失厌恶","fomo","羊群效应","确认偏误","可得性启发","幸存者偏差","沉没成本谬误","赌徒谬误","邓宁-克鲁格","达克效应","归因偏差"]},
+  }},
+  "社会与组织理论":{icon:"🏛",color:"#EC4899",subs:{
+    "组织与制度":{kw:["科层制","制度经济学","委托代理","治理","官僚","组织行为","kpi","okr"]},
+    "社会动力":{kw:["社会资本","社会债务","公共领域","公民社会","身份政治","阶层","共同体","信任网络"]},
+  }},
 };
 
 function isKnowledgeTerm(t){
-  const def=t.def||'';
-  if(def.includes('嘉宾定义')||def.includes('嘉宾/受访者定义')||def.includes('受访者定义'))return false;
-  if(/^(SEED|萤火|Tilang|OpenRouter|豆包|TopLin|ImageNet|通讯作者|金刚经|道德经|连续思维|技术的自我|编辑|水线|意外值|脏活累活)/.test(t.name))return false;
-  if(t.name.length<2||t.name.length>25)return false;
-  if(/^(字节|阿里|腾讯|百度|幻方|DeepSeek|华为|北京大学|浙江大学).{0,5}(的|推出|团队|项目|发起)/.test(def))return false;
-  const text=(t.name+' '+(t.eng||'')+' '+def).toLowerCase();
-  for(const cat of Object.values(TAXONOMY)){for(const sub of Object.values(cat.subs)){if(sub.kw.some(k=>text.includes(k.toLowerCase())))return true;}}
-  if(t.eng&&t.eng.length>2)return true;
-  if(/概念|理论|效应|原理|定律|法则|模型|方法|术语|经济|心理|社会|哲学|数学/.test(def))return true;
+  const name=(t.name||'').trim();
+  const def=(t.def||'').trim();
+
+  // === Hard rejections ===
+
+  // 1. Length sanity
+  if(name.length<2||name.length>30)return false;
+
+  // 2. Book/movie/work titles
+  if(/[《》「」『』]/.test(name))return false;
+
+  // 3. Specific entity suffixes — companies, orgs, schools, products
+  if(/(公司|集团|研究院|实验室|学院|大学|事业部|项目组|工作室|小组)$/.test(name))return false;
+
+  // 4. Geographic / political / governmental entities
+  if(/^(中国|美国|欧洲|欧盟|日本|印度|台湾|香港|中东|北京|上海|深圳|杭州|纽约|硅谷|城投|央企|国资|地方政府|国务院)/.test(name))return false;
+
+  // 5. Brand-name narrative metaphors (e.g. "iPhone引力场", "DeepSeek时刻")
+  if(/^(iphone|android|gpt|claude|chatgpt|gemini|苹果|谷歌|字节|阿里|腾讯|微软|英伟达|nvidia|deepseek|openai|anthropic|meta|tesla|抖音|淘宝|拼多多|微信|小红书).*?(场|引力|生态|帝国|战争|魔咒|时代|时刻|崛起|衰落|滑铁卢|奇点|围城|护城|周期|红利)$/i.test(name))return false;
+
+  // 6. Pure product / brand names with no transferable concept
+  const productOnly=/^(openai|anthropic|google|deepmind|meta|microsoft|apple|tesla|cursor|manus|replika|character\.ai|humane|rabbit|cline|devin|codex|claude|gpt|gemini|chatgpt|mistral|tilang|rogo|harvey|openrouter|openclaw|toplin|toplinai|acquired|aladdin|seed|imagenet|harvey|rogo|cbx)$/i;
+  if(productOnly.test(name))return false;
+
+  // 7. Definitions starting with year-prefixed historical narrative
+  if(/^(19|20)\d{2}\s*年/.test(def))return false;
+
+  // 8. Explicit "原文用法/比喻" markers
+  if(/(原文用法|文中用法|文中比喻|本文比喻|文章中称为|本集中称为|嘉宾称之为)/.test(def))return false;
+
+  // 9. Quotes / phrases that are not concepts (contain ， or 。 in name)
+  if(/[，。!？!?]/.test(name))return false;
+
+  // 10. Existing blacklist (keep historical bad apples)
+  if(/^(SEED|萤火|Tilang|OpenRouter|豆包|TopLin|TopLinAI|ImageNet|通讯作者|金刚经|道德经|连续思维|技术的自我|编辑|水线|意外值|脏活累活|Acquired|CBX|Rogo|Harvey|Aladdin)$/i.test(name))return false;
+
+  // 11. Definition smells like a company/team announcement
+  if(/^(字节|阿里|腾讯|百度|幻方|DeepSeek|华为|北京大学|浙江大学|MIT|Stanford).{0,5}(的|推出|团队|项目|发起|开发的|研发的)/.test(def))return false;
+
+  // === Acceptance criteria (must pass at least one) ===
+  const text=(name+' '+(t.eng||'')+' '+def).toLowerCase();
+  // A. Matches a TAXONOMY keyword
+  for(const cat of Object.values(TAXONOMY)){
+    for(const sub of Object.values(cat.subs)){
+      if(sub.kw.some(k=>text.includes(k.toLowerCase())))return true;
+    }
+  }
+  // B. Has a clear English equivalent (multi-word)
+  if(t.eng&&/^[A-Z][A-Za-z\s\-]{3,}$/.test(t.eng.trim()))return true;
+  // C. Definition contains conceptual markers
+  if(/(理论|原理|效应|定律|法则|公理|公式|悖论|假说|学派|主义|范式|模型框架)/.test(def))return true;
+
   return false;
 }
 
@@ -1327,7 +1410,7 @@ async function delThought(id){
 }
 
 async function openGlimpseTimeline(){
-  if(!isAdmin){showLoginModal();return;}
+  /* admin guard removed */
   const today=todayISO();
   let todayNote=notes.find(n=>n.source_type==='glimpse'&&n.title===today);
   if(!todayNote){
@@ -1655,21 +1738,21 @@ function getPreSelectionText(root,range){
 
 function addCommentFromSelection(){
   if(!_cur||!_cur.pendingSel)return;
-  if(!isAdmin){hideSelTb();showLoginModal();return;}
+  /* admin guard removed */
   hideSelTb();
   openCmtPop({quote:_cur.pendingSel.text,occurrence:_cur.pendingSel.occurrence,color:_cur.selColor,comment:'',kind:'comment'});
 }
 
 function addThoughtFromSelection(){
   if(!_cur||!_cur.pendingSel)return;
-  if(!isAdmin){hideSelTb();showLoginModal();return;}
+  /* admin guard removed */
   hideSelTb();
   openCmtPop({quote:_cur.pendingSel.text,occurrence:_cur.pendingSel.occurrence,color:'purple',comment:'',kind:'thought'});
 }
 
 async function addToGlimpseFromSelection(){
   if(!_cur||!_cur.pendingSel){return;}
-  if(!isAdmin){hideSelTb();showLoginModal();return;}
+  /* admin guard removed */
   const text=_cur.pendingSel.text;
   hideSelTb();
   // Resolve source title and id
@@ -1939,7 +2022,7 @@ function closeSrc(){window._openSrc=null;document.getElementById('sdrw').classLi
 
 function renderSrc(type){
   const b=document.getElementById('sdb');
-  if(!isAdmin){b.innerHTML='<div class="emp"><div class="ic">&#128274;</div><h3>需要登录</h3><p style="margin-top:8px;"><button class="bt bp" onclick="showLoginModal()">登录</button></p></div>';return;}
+  /* admin guard removed 2026-05-08 */
   if(type==='podcast')b.innerHTML=renderPodcastSrc();
   else if(type==='lark')b.innerHTML=renderLarkSrc();
   else if(type==='note')b.innerHTML=renderNoteSrc();
