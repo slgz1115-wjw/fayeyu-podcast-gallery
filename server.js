@@ -24,66 +24,99 @@ const db = new Database(path.join(DATA_DIR, 'podcasts.db'));
 const TRANSCRIPTS_DIR = path.join(__dirname, 'transcripts');
 if (!fs.existsSync(TRANSCRIPTS_DIR)) fs.mkdirSync(TRANSCRIPTS_DIR);
 
-// --- Auth ---
-// 2026-05-14: 部署 Railway 后必须用 env 注入新密码,不能用 hardcoded fallback(那个密码已 commit 进公开 repo)
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'fayeyu2026';
-if (ADMIN_PASSWORD === 'fayeyu2026') {
-  console.warn('[auth] ⚠ WARNING: using default ADMIN_PASSWORD — set process.env.ADMIN_PASSWORD before exposing this instance publicly');
-}
-// Sessions are persisted to SQLite so pm2 restarts don't log everyone out.
-// We keep an in-memory Map as a read cache, backed by the `sessions` table.
-const sessions = new Map(); // token -> { created, expires }
-
-// Create sessions table + restore non-expired rows into the Map.
-db.exec(`CREATE TABLE IF NOT EXISTS sessions (
-  token TEXT PRIMARY KEY,
-  created INTEGER NOT NULL,
-  expires INTEGER NOT NULL
-)`);
-// Clear expired rows, then load the rest.
-db.prepare('DELETE FROM sessions WHERE expires < ?').run(Date.now());
-const restoredSessions = db.prepare('SELECT token, created, expires FROM sessions').all();
-restoredSessions.forEach(s => sessions.set(s.token, { created: s.created, expires: s.expires }));
-if (restoredSessions.length) console.log(`[auth] restored ${restoredSessions.length} session(s) from DB`);
-
-function generateToken() { return crypto.randomBytes(32).toString('hex'); }
-function isAdmin(req) {
-  const token = req.headers['x-auth-token'] || req.query.token;
-  if (!token) return false;
-  const s = sessions.get(token);
-  if (!s) return false;
-  if (Date.now() > s.expires) {
-    sessions.delete(token);
-    try { db.prepare('DELETE FROM sessions WHERE token=?').run(token); } catch(e) {}
-    return false;
-  }
-  return true;
-}
-function requireAdmin(req, res, next) {
-  // 2026-05-14: 上线 Railway 后恢复 admin 校验。本机也走同一路径(Faye 登录一次 session 持续 7 天)
-  // ADMIN_PASSWORD 通过 env 注入,不要再用 hardcoded 默认值
-  if (isAdmin(req)) return next();
-  return res.status(401).json({ error: 'unauthorized' });
+// 2026-05-19: Multi-tenant SaaS migration. Idempotent. Skipped if users table already populated.
+try {
+  const { applyMigration } = require('./migrations/2026-05-19-multi-tenant');
+  applyMigration(db);
+} catch (e) {
+  console.error('[migration] FAILED:', e.message);
+  console.error('Server starting in legacy mode. Fix migration env vars and restart.');
 }
 
-// Login
-app.post('/api/auth/login', express.json(), (req, res) => {
-  if (req.body.password === ADMIN_PASSWORD) {
-    const token = generateToken();
-    const created = Date.now();
-    const expires = created + 7 * 24 * 60 * 60 * 1000; // 7 days
-    sessions.set(token, { created, expires });
-    try { db.prepare('INSERT INTO sessions (token, created, expires) VALUES (?, ?, ?)').run(token, created, expires); } catch(e) { console.error('[auth] persist session failed:', e.message); }
-    res.json({ ok: true, token });
-  } else {
-    res.status(401).json({ error: 'wrong password' });
+// --- Auth (2026-05-19 multi-tenant) ---
+const cookieParser = require('cookie-parser');
+const { hashPassword, verifyPassword, createSession, verifyToken, deleteSession, requireUser: requireUserFactory, signupRateLimit, loginRateLimit } = require('./lib/auth');
+const { encryptApiKey, decryptApiKey } = require('./lib/crypto');
+
+app.use(cookieParser());
+
+const requireUser = requireUserFactory(db);
+// requireAdmin kept as alias for backward compat with existing route definitions (so we can audit later).
+const requireAdmin = requireUser;
+
+// Signup — open registration
+app.post('/api/auth/signup', signupRateLimit, express.json(), async (req, res) => {
+  try {
+    const { email, password, display_name } = req.body || {};
+    if (!email || !password) return res.status(400).json({ error: 'email + password 都必填' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'email 格式不对' });
+    if (String(password).length < 8) return res.status(400).json({ error: '密码至少 8 位' });
+    const exists = db.prepare(`SELECT id FROM users WHERE email = ?`).get(email);
+    if (exists) return res.status(409).json({ error: '该 email 已注册,请直接登录' });
+    const hash = await hashPassword(password);
+    const result = db.prepare(`INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)`)
+                     .run(email.toLowerCase(), hash, display_name || email.split('@')[0]);
+    const userId = result.lastInsertRowid;
+    const token = createSession(db, userId);
+    res.json({ ok: true, token, user: { id: userId, email: email.toLowerCase(), display_name: display_name || email.split('@')[0] } });
+  } catch (e) {
+    console.error('[signup] error:', e.message);
+    res.status(500).json({ error: 'signup 失败: ' + e.message });
   }
 });
 
-// Check auth status
-app.get('/api/auth/check', (req, res) => {
-  res.json({ isAdmin: true });  // 2026-05-08 auth removed
+// Login (now requires email + password)
+app.post('/api/auth/login', loginRateLimit, express.json(), async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'email + password 都必填' });
+  const user = db.prepare(`SELECT id, email, display_name, password_hash FROM users WHERE email = ?`).get(email.toLowerCase());
+  if (!user) return res.status(401).json({ error: 'email 或密码不对' });
+  const ok = await verifyPassword(password, user.password_hash);
+  if (!ok) return res.status(401).json({ error: 'email 或密码不对' });
+  const token = createSession(db, user.id);
+  db.prepare(`UPDATE users SET last_login_at = datetime('now') WHERE id = ?`).run(user.id);
+  res.json({ ok: true, token, user: { id: user.id, email: user.email, display_name: user.display_name } });
 });
+
+// Who am I
+app.get('/api/auth/me', requireUser, (req, res) => {
+  const u = db.prepare(`SELECT id, email, display_name, is_admin, deepseek_api_key IS NOT NULL AS has_deepseek, groq_api_key IS NOT NULL AS has_groq FROM users WHERE id = ?`).get(req.user_id);
+  res.json({ ok: true, user: u });
+});
+
+// Logout
+app.post('/api/auth/logout', requireUser, (req, res) => {
+  const token = req.headers?.authorization?.replace(/^Bearer\s+/i, '') || req.cookies?.session;
+  deleteSession(db, token);
+  res.json({ ok: true });
+});
+
+// Settings — change password, API keys, display_name
+app.post('/api/auth/settings', requireUser, express.json(), async (req, res) => {
+  const { current_password, new_password, deepseek_api_key, groq_api_key, display_name } = req.body || {};
+  const user = db.prepare(`SELECT password_hash FROM users WHERE id = ?`).get(req.user_id);
+
+  if (new_password) {
+    if (!current_password) return res.status(400).json({ error: '改密码要先输旧密码' });
+    if (!await verifyPassword(current_password, user.password_hash)) return res.status(401).json({ error: '旧密码不对' });
+    if (String(new_password).length < 8) return res.status(400).json({ error: '新密码至少 8 位' });
+    const newHash = await hashPassword(new_password);
+    db.prepare(`UPDATE users SET password_hash = ? WHERE id = ?`).run(newHash, req.user_id);
+  }
+  if (deepseek_api_key !== undefined) {
+    const enc = deepseek_api_key ? encryptApiKey(deepseek_api_key) : null;
+    db.prepare(`UPDATE users SET deepseek_api_key = ? WHERE id = ?`).run(enc, req.user_id);
+  }
+  if (groq_api_key !== undefined) {
+    const enc = groq_api_key ? encryptApiKey(groq_api_key) : null;
+    db.prepare(`UPDATE users SET groq_api_key = ? WHERE id = ?`).run(enc, req.user_id);
+  }
+  if (display_name !== undefined) {
+    db.prepare(`UPDATE users SET display_name = ? WHERE id = ?`).run(display_name, req.user_id);
+  }
+  res.json({ ok: true });
+});
+// --- end auth ---
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -135,24 +168,25 @@ app.get('/api/search', async (req, res) => {
   } catch(e) { res.json([]); }
 });
 
-app.get('/api/podcasts', (req, res) => {
+app.get('/api/podcasts', requireAdmin, (req, res) => {
   res.json(db.prepare(`
     SELECT p.*, COUNT(e.id) as episode_count,
     SUM(CASE WHEN e.status='new' THEN 1 ELSE 0 END) as new_count
     FROM podcasts p LEFT JOIN episodes e ON e.podcast_id=p.id
+    WHERE p.user_id = ?
     GROUP BY p.id ORDER BY p.created_at DESC
-  `).all());
+  `).all(req.user_id));
 });
 
 app.post('/api/podcasts', requireAdmin, async (req, res) => {
   const { name, rss_url, artwork } = req.body;
   if (!name) return res.status(400).json({ error: 'name required' });
-  const info = db.prepare('INSERT INTO podcasts (name, rss_url, artwork) VALUES (?, ?, ?)').run(name, rss_url || null, artwork || null);
+  const info = db.prepare('INSERT INTO podcasts (user_id, name, rss_url, artwork) VALUES (?, ?, ?, ?)').run(req.user_id, name, rss_url || null, artwork || null);
   // 2026-05-14: 不再静默吞 fetch 错。返回给前端能看到的 warning,podcast 已建但 RSS 拉失败
   let warning = null;
   let episodes_fetched = 0;
   if (rss_url) {
-    try { episodes_fetched = await fetchEpisodes(info.lastInsertRowid, rss_url); }
+    try { episodes_fetched = await fetchEpisodes(info.lastInsertRowid, rss_url, req.user_id); }
     catch (e) {
       console.error('[POST /api/podcasts] fetchEpisodes failed:', e.message);
       warning = `RSS 抓取失败: ${e.message} —— podcast 已建,可稍后手动 refresh`;
@@ -162,15 +196,16 @@ app.post('/api/podcasts', requireAdmin, async (req, res) => {
 });
 
 app.delete('/api/podcasts/:id', requireAdmin, (req, res) => {
-  db.prepare('DELETE FROM episodes WHERE podcast_id=?').run(req.params.id);
-  db.prepare('DELETE FROM podcasts WHERE id=?').run(req.params.id);
+  db.prepare('DELETE FROM episodes WHERE podcast_id=? AND user_id=?').run(req.params.id, req.user_id);
+  const result = db.prepare('DELETE FROM podcasts WHERE id=? AND user_id=?').run(req.params.id, req.user_id);
+  if (result.changes === 0) return res.status(404).json({ error: 'podcast not found or not yours' });
   res.json({ ok: true });
 });
 
-app.get('/api/episodes', (req, res) => {
+app.get('/api/episodes', requireAdmin, (req, res) => {
   const { podcast_id, status } = req.query;
-  let sql = `SELECT e.id, e.podcast_id, e.title, e.pub_date, e.link, e.audio_url, e.description, e.status, e.notes, e.is_oneoff, e.starred, e.created_at, p.name as podcast_name, p.artwork as podcast_artwork FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE 1=1`;
-  const params = [];
+  let sql = `SELECT e.id, e.podcast_id, e.title, e.pub_date, e.link, e.audio_url, e.description, e.status, e.notes, e.is_oneoff, e.starred, e.created_at, p.name as podcast_name, p.artwork as podcast_artwork FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.user_id = ?`;
+  const params = [req.user_id];
   if (podcast_id) { sql += ` AND e.podcast_id=?`; params.push(podcast_id); }
   if (status) { sql += ` AND e.status=?`; params.push(status); }
   sql += ` ORDER BY e.pub_date DESC, e.created_at DESC`;
@@ -181,16 +216,22 @@ app.get('/api/episodes', (req, res) => {
 
 app.patch('/api/episodes/:id', requireAdmin, (req, res) => {
   const { status, notes } = req.body;
-  if (status) db.prepare('UPDATE episodes SET status=? WHERE id=?').run(status, req.params.id);
-  if (notes !== undefined) db.prepare('UPDATE episodes SET notes=? WHERE id=?').run(notes, req.params.id);
+  if (status) {
+    const r = db.prepare('UPDATE episodes SET status=? WHERE id=? AND user_id=?').run(status, req.params.id, req.user_id);
+    if (r.changes === 0) return res.status(404).json({ error: 'episode not found or not yours' });
+  }
+  if (notes !== undefined) {
+    const r = db.prepare('UPDATE episodes SET notes=? WHERE id=? AND user_id=?').run(notes, req.params.id, req.user_id);
+    if (r.changes === 0) return res.status(404).json({ error: 'episode not found or not yours' });
+  }
   res.json({ ok: true });
 });
 
 // ========== CORE: Start full auto pipeline ==========
 app.post('/api/episodes/:id/process', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
-  const ep = db.prepare(`SELECT e.*, p.name as podcast_name FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.id=?`).get(id);
-  if (!ep) return res.status(404).json({ error: 'not found' });
+  const ep = db.prepare(`SELECT e.*, p.name as podcast_name FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.id=? AND e.user_id=?`).get(id, req.user_id);
+  if (!ep) return res.status(404).json({ error: 'episode not found or not yours' });
 
   db.prepare('UPDATE episodes SET status=? WHERE id=?').run('processing', id);
 
@@ -200,7 +241,7 @@ app.post('/api/episodes/:id/process', requireAdmin, async (req, res) => {
       if (ep.audio_url) {
         const procs = [];
         jobProcesses.set(id, procs);
-        const result = await runPipeline(ep, ep.audio_url, (prog) => jobs.set(id, prog), (proc) => procs.push(proc));
+        const result = await runPipeline(ep, ep.audio_url, (prog) => jobs.set(id, prog), (proc) => procs.push(proc), req.user_id);
         db.prepare('UPDATE episodes SET transcript=?, notes=?, status=? WHERE id=?').run(result.transcript, result.notes, 'done', id);
       } else {
         // No audio URL: just mark as needing manual transcript
@@ -230,14 +271,15 @@ app.post('/api/episodes/:id/transcript', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (!transcript) return res.status(400).json({ error: 'transcript required' });
 
-  const ep = db.prepare(`SELECT e.*, p.name as podcast_name FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.id=?`).get(id);
+  const ep = db.prepare(`SELECT e.*, p.name as podcast_name FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.id=? AND e.user_id=?`).get(id, req.user_id);
+  if (!ep) return res.status(404).json({ error: 'episode not found or not yours' });
   db.prepare('UPDATE episodes SET transcript=?, status=? WHERE id=?').run(transcript, 'processing', id);
 
   // Just run Claude extraction
   (async () => {
     try {
       jobs.set(id, { step: 'extracting', progress: 60, message: 'Claude 按 Skill 提炼三模块笔记...' });
-      const notes = await extractNotes(transcript, ep.podcast_name, ep.title);
+      const notes = await extractNotes(transcript, ep.podcast_name, ep.title, req.user_id);
       db.prepare('UPDATE episodes SET notes=?, status=? WHERE id=?').run(notes, 'done', id);
       jobs.set(id, { step: 'done', progress: 100, message: '提炼完成！' });
       setTimeout(() => jobs.delete(id), 60000);
@@ -261,10 +303,10 @@ app.get('/api/jobs/:id', (req, res) => {
 });
 
 // Re-extract: re-run note extraction on existing transcript without re-downloading/re-transcribing
-app.post('/api/episodes/:id/reextract', async (req, res) => {
+app.post('/api/episodes/:id/reextract', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
-  const ep = db.prepare(`SELECT e.*, p.name as podcast_name FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.id=?`).get(id);
-  if (!ep) return res.status(404).json({ error: 'not found' });
+  const ep = db.prepare(`SELECT e.*, p.name as podcast_name FROM episodes e JOIN podcasts p ON e.podcast_id=p.id WHERE e.id=? AND e.user_id=?`).get(id, req.user_id);
+  if (!ep) return res.status(404).json({ error: 'episode not found or not yours' });
   if (!ep.transcript) return res.status(400).json({ error: '该集没有逐字稿，无法重新提炼' });
 
   db.prepare('UPDATE episodes SET status=? WHERE id=?').run('processing', id);
@@ -272,7 +314,7 @@ app.post('/api/episodes/:id/reextract', async (req, res) => {
   (async () => {
     try {
       jobs.set(id, { step: 'extracting', progress: 60, message: '重新提炼笔记中（新版 prompt）...' });
-      const notes = await extractNotes(ep.transcript, ep.podcast_name, ep.title);
+      const notes = await extractNotes(ep.transcript, ep.podcast_name, ep.title, req.user_id);
       db.prepare('UPDATE episodes SET notes=?, status=? WHERE id=?').run(notes, 'done', id);
       jobs.set(id, { step: 'done', progress: 100, message: '重新提炼完成！' });
       setTimeout(() => jobs.delete(id), 60000);
@@ -299,70 +341,78 @@ db.exec(`CREATE TABLE IF NOT EXISTS kg_edits (
 )`);
 
 // Get all KG edits
-app.get('/api/kg/edits', (req, res) => {
-  res.json(db.prepare('SELECT * FROM kg_edits').all());
+app.get('/api/kg/edits', requireAdmin, (req, res) => {
+  res.json(db.prepare('SELECT * FROM kg_edits WHERE user_id=? ORDER BY updated_at DESC').all(req.user_id));
 });
 
 // Save a KG edit (delete, rename, move, annotate)
 app.post('/api/kg/edit', requireAdmin, (req, res) => {
   const { term, action, new_name, new_category, new_subcategory, user_note } = req.body;
   if (!term || !action) return res.status(400).json({ error: 'term and action required' });
-  db.prepare(`INSERT OR REPLACE INTO kg_edits (term, action, new_name, new_category, new_subcategory, user_note, updated_at) VALUES (?,?,?,?,?,?,datetime('now'))`).run(
-    term, action, new_name || null, new_category || null, new_subcategory || null, user_note || null
+  db.prepare(`INSERT OR REPLACE INTO kg_edits (user_id, term, action, new_name, new_category, new_subcategory, user_note, updated_at) VALUES (?,?,?,?,?,?,?,datetime('now'))`).run(
+    req.user_id, term, action, new_name || null, new_category || null, new_subcategory || null, user_note || null
   );
   res.json({ ok: true });
 });
 
 // Remove a KG edit (restore term)
 app.delete('/api/kg/edit/:term', requireAdmin, (req, res) => {
-  db.prepare('DELETE FROM kg_edits WHERE term=?').run(req.params.term);
+  const r = db.prepare('DELETE FROM kg_edits WHERE term=? AND user_id=?').run(req.params.term, req.user_id);
+  if (r.changes === 0) return res.status(404).json({ error: 'kg edit not found or not yours' });
   res.json({ ok: true });
 });
 
 // Toggle star
 app.post('/api/episodes/:id/star', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
-  const ep = db.prepare('SELECT starred FROM episodes WHERE id=?').get(id);
-  const newVal = ep && ep.starred ? 0 : 1;
-  db.prepare('UPDATE episodes SET starred=? WHERE id=?').run(newVal, id);
+  const ep = db.prepare('SELECT starred FROM episodes WHERE id=? AND user_id=?').get(id, req.user_id);
+  if (!ep) return res.status(404).json({ error: 'episode not found or not yours' });
+  const newVal = ep.starred ? 0 : 1;
+  db.prepare('UPDATE episodes SET starred=? WHERE id=? AND user_id=?').run(newVal, id, req.user_id);
   res.json({ ok: true, starred: newVal });
 });
 
 // Abort a running pipeline
 app.post('/api/episodes/:id/abort', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
+  // Ownership check before aborting
+  const ep = db.prepare('SELECT id FROM episodes WHERE id=? AND user_id=?').get(id, req.user_id);
+  if (!ep) return res.status(404).json({ error: 'episode not found or not yours' });
   const procs = jobProcesses.get(id);
   if (procs) {
     procs.forEach(p => { try { p.kill('SIGTERM'); } catch(e) {} });
     jobProcesses.delete(id);
   }
   jobs.delete(id);
-  db.prepare('UPDATE episodes SET status=? WHERE id=?').run('new', id);
+  db.prepare('UPDATE episodes SET status=? WHERE id=? AND user_id=?').run('new', id, req.user_id);
   res.json({ ok: true });
 });
 
 app.post('/api/episodes/oneoff', requireAdmin, async (req, res) => {
   const { title, link, description } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
-  let oneoff = db.prepare(`SELECT id FROM podcasts WHERE name='_散装收藏'`).get();
-  if (!oneoff) { const info = db.prepare(`INSERT INTO podcasts (name) VALUES ('_散装收藏')`).run(); oneoff = { id: info.lastInsertRowid }; }
-  db.prepare(`INSERT INTO episodes (podcast_id, title, link, description, is_oneoff, pub_date) VALUES (?,?,?,?,1,datetime('now'))`).run(
-    oneoff.id, title, link || null, description || null);
+  let oneoff = db.prepare(`SELECT id FROM podcasts WHERE name='_散装收藏' AND user_id=?`).get(req.user_id);
+  if (!oneoff) {
+    const info = db.prepare(`INSERT INTO podcasts (user_id, name, artwork) VALUES (?, '_散装收藏', NULL)`).run(req.user_id);
+    oneoff = { id: info.lastInsertRowid };
+  }
+  db.prepare(`INSERT INTO episodes (user_id, podcast_id, title, link, description, is_oneoff, pub_date) VALUES (?,?,?,?,?,1,datetime('now'))`).run(
+    req.user_id, oneoff.id, title, link || null, description || null);
   res.json({ ok: true });
 });
 
 app.post('/api/refresh', requireAdmin, async (req, res) => {
-  const podcasts = db.prepare(`SELECT * FROM podcasts WHERE rss_url IS NOT NULL AND name != '_散装收藏'`).all();
+  const podcasts = db.prepare(`SELECT * FROM podcasts WHERE user_id = ? AND rss_url IS NOT NULL AND name != '_散装收藏'`).all(req.user_id);
   let total = 0;
-  for (const p of podcasts) { try { total += await fetchEpisodes(p.id, p.rss_url); } catch(e) { console.error(e); } }
+  for (const p of podcasts) { try { total += await fetchEpisodes(p.id, p.rss_url, req.user_id); } catch(e) { console.error(e); } }
   res.json({ new_episodes: total });
 });
 
 // Fetch episodes from RSS (now captures audio_url from enclosure)
-async function fetchEpisodes(podcastId, rssUrl) {
+async function fetchEpisodes(podcastId, rssUrl, userId) {
   const feed = await parser.parseURL(rssUrl);
-  const existing = new Set(db.prepare('SELECT link FROM episodes WHERE podcast_id=?').all(podcastId).map(r => r.link));
-  const insert = db.prepare('INSERT INTO episodes (podcast_id, title, pub_date, link, audio_url, description) VALUES (?,?,?,?,?,?)');
+  const existing = new Set(db.prepare('SELECT link FROM episodes WHERE podcast_id=? AND user_id=?').all(podcastId, userId).map(r => r.link));
+  const insert = db.prepare('INSERT INTO episodes (user_id, podcast_id, title, pub_date, link, audio_url, description) VALUES (?,?,?,?,?,?,?)');
   let count = 0;
   // 2026-05-14 Faye: 默认拉前 20 集（之前是 50,Faye 觉得太多杂）
   for (const item of feed.items.slice(0, 20)) {
@@ -370,18 +420,26 @@ async function fetchEpisodes(podcastId, rssUrl) {
     if (existing.has(link)) continue;
     // Extract audio URL from enclosure
     const audioUrl = item.enclosure?.url || item.enclosure?.['$']?.url || null;
-    insert.run(podcastId, item.title, item.pubDate || item.isoDate || null, link, audioUrl,
+    insert.run(userId, podcastId, item.title, item.pubDate || item.isoDate || null, link, audioUrl,
       (item.contentSnippet || item.content || '').substring(0, 2000));
     count++;
   }
-  db.prepare(`UPDATE podcasts SET last_checked=datetime('now') WHERE id=?`).run(podcastId);
+  db.prepare(`UPDATE podcasts SET last_checked=datetime('now') WHERE id=? AND user_id=?`).run(podcastId, userId);
   return count;
 }
 
 cron.schedule('*/30 * * * *', async () => {
-  console.log('[cron] Checking RSS feeds...');
-  const podcasts = db.prepare(`SELECT * FROM podcasts WHERE rss_url IS NOT NULL AND name != '_散装收藏'`).all();
-  for (const p of podcasts) { try { const n = await fetchEpisodes(p.id, p.rss_url); if(n>0) console.log(`[cron] ${p.name}: ${n} new`); } catch(e) { console.error(e); } }
+  console.log('[cron] Checking RSS feeds for all users...');
+  const users = db.prepare('SELECT id FROM users').all();
+  let total = 0;
+  for (const u of users) {
+    const podcasts = db.prepare(`SELECT * FROM podcasts WHERE user_id = ? AND rss_url IS NOT NULL AND name != '_散装收藏'`).all(u.id);
+    for (const p of podcasts) {
+      try { const n = await fetchEpisodes(p.id, p.rss_url, u.id); if(n>0) { console.log(`[cron] user ${u.id} ${p.name}: ${n} new`); total += n; } }
+      catch(e) { console.error(`[cron] user ${u.id} podcast ${p.id}:`, e.message); }
+    }
+  }
+  console.log(`[cron] done, ${total} new episodes total`);
 });
 
 // --- Skills (prompt templates, categorized by content type) ---
@@ -498,51 +556,65 @@ db.exec(`CREATE TABLE IF NOT EXISTS comments (
 // Add kind column to distinguish comments ('comment') from critical thoughts ('thought').
 try { db.exec(`ALTER TABLE comments ADD COLUMN kind TEXT DEFAULT 'comment'`); } catch(e) {}
 
-app.get('/api/comments', (req, res) => {
+app.get('/api/comments', requireAdmin, (req, res) => {
   const { target_type, target_id } = req.query;
   if (!target_type || !target_id) return res.json([]);
-  const rows = db.prepare('SELECT * FROM comments WHERE target_type=? AND target_id=? ORDER BY id ASC').all(target_type, parseInt(target_id));
+  const rows = db.prepare('SELECT * FROM comments WHERE target_type=? AND target_id=? AND user_id=? ORDER BY id ASC').all(target_type, parseInt(target_id), req.user_id);
   res.json(rows);
 });
 app.post('/api/comments', requireAdmin, (req, res) => {
   const { target_type, target_id, quote, occurrence, comment, color, kind } = req.body;
   if (!target_type || !target_id || !quote) return res.status(400).json({ error: 'missing fields' });
-  const info = db.prepare('INSERT INTO comments (target_type, target_id, quote, occurrence, comment, color, kind) VALUES (?,?,?,?,?,?,?)').run(
-    target_type, parseInt(target_id), quote, occurrence || 0, comment || '', color || 'yellow', kind === 'thought' ? 'thought' : 'comment'
+  const tid = parseInt(target_id);
+  // Ownership check: target must belong to this user
+  if (target_type === 'episode') {
+    const target = db.prepare('SELECT id FROM episodes WHERE id=? AND user_id=?').get(tid, req.user_id);
+    if (!target) return res.status(404).json({ error: 'target episode not found or not yours' });
+  } else if (target_type === 'note') {
+    const target = db.prepare('SELECT id FROM notes WHERE id=? AND user_id=?').get(tid, req.user_id);
+    if (!target) return res.status(404).json({ error: 'target note not found or not yours' });
+  }
+  const info = db.prepare('INSERT INTO comments (user_id, target_type, target_id, quote, occurrence, comment, color, kind) VALUES (?,?,?,?,?,?,?,?)').run(
+    req.user_id, target_type, tid, quote, occurrence || 0, comment || '', color || 'yellow', kind === 'thought' ? 'thought' : 'comment'
   );
   res.json({ id: info.lastInsertRowid, ok: true });
 });
 
 // Aggregate all thoughts across all notes/episodes — for the 思考集 view
-app.get('/api/thoughts', (req, res) => {
+app.get('/api/thoughts', requireAdmin, (req, res) => {
   const rows = db.prepare(`
     SELECT c.*,
       CASE WHEN c.target_type='episode' THEN e.title ELSE n.title END as source_title,
       CASE WHEN c.target_type='episode' THEN p.name ELSE n.source_type END as source_label
     FROM comments c
-    LEFT JOIN episodes e ON c.target_type='episode' AND e.id=c.target_id
+    LEFT JOIN episodes e ON c.target_type='episode' AND e.id=c.target_id AND e.user_id=?
     LEFT JOIN podcasts p ON e.podcast_id=p.id
-    LEFT JOIN notes n ON c.target_type='note' AND n.id=c.target_id
-    WHERE c.kind='thought'
+    LEFT JOIN notes n ON c.target_type='note' AND n.id=c.target_id AND n.user_id=?
+    WHERE c.kind='thought' AND c.user_id=?
     ORDER BY c.created_at DESC
-  `).all();
+  `).all(req.user_id, req.user_id, req.user_id);
   res.json(rows);
 });
 app.patch('/api/comments/:id', requireAdmin, (req, res) => {
   const { comment, color } = req.body;
-  if (comment !== undefined) db.prepare('UPDATE comments SET comment=? WHERE id=?').run(comment, req.params.id);
-  if (color !== undefined) db.prepare('UPDATE comments SET color=? WHERE id=?').run(color, req.params.id);
+  const id = parseInt(req.params.id);
+  // Verify ownership first
+  const existing = db.prepare('SELECT id FROM comments WHERE id=? AND user_id=?').get(id, req.user_id);
+  if (!existing) return res.status(404).json({ error: 'comment not found or not yours' });
+  if (comment !== undefined) db.prepare('UPDATE comments SET comment=? WHERE id=? AND user_id=?').run(comment, id, req.user_id);
+  if (color !== undefined) db.prepare('UPDATE comments SET color=? WHERE id=? AND user_id=?').run(color, id, req.user_id);
   res.json({ ok: true });
 });
 app.delete('/api/comments/:id', requireAdmin, (req, res) => {
-  db.prepare('DELETE FROM comments WHERE id=?').run(req.params.id);
+  const r = db.prepare('DELETE FROM comments WHERE id=? AND user_id=?').run(parseInt(req.params.id), req.user_id);
+  if (r.changes === 0) return res.status(404).json({ error: 'comment not found or not yours' });
   res.json({ ok: true });
 });
 
-app.get('/api/notes', (req, res) => {
+app.get('/api/notes', requireAdmin, (req, res) => {
   const { source_type, status } = req.query;
-  let sql = 'SELECT * FROM notes WHERE 1=1';
-  const params = [];
+  let sql = 'SELECT * FROM notes WHERE user_id=?';
+  const params = [req.user_id];
   if (source_type) { sql += ' AND source_type=?'; params.push(source_type); }
   if (status) { sql += ' AND status=?'; params.push(status); }
   sql += ' ORDER BY created_at DESC';
@@ -552,8 +624,8 @@ app.get('/api/notes', (req, res) => {
 app.post('/api/notes', requireAdmin, (req, res) => {
   const { source_type, source_ref, title, content, raw_content, skill_id, metadata } = req.body;
   const explicitStatus = req.body.status;
-  const info = db.prepare(`INSERT INTO notes (source_type, source_ref, title, content, raw_content, skill_id, status, metadata) VALUES (?,?,?,?,?,?,?,?)`).run(
-    source_type, source_ref || null, title, content || null, raw_content || null, skill_id || null, explicitStatus || (content ? 'done' : 'new'), JSON.stringify(metadata || {})
+  const info = db.prepare(`INSERT INTO notes (user_id, source_type, source_ref, title, content, raw_content, skill_id, status, metadata) VALUES (?,?,?,?,?,?,?,?,?)`).run(
+    req.user_id, source_type, source_ref || null, title, content || null, raw_content || null, skill_id || null, explicitStatus || (content ? 'done' : 'new'), JSON.stringify(metadata || {})
   );
   res.json({ id: info.lastInsertRowid });
 });
@@ -567,13 +639,16 @@ app.patch('/api/notes/:id', requireAdmin, (req, res) => {
   if (fields.length) {
     fields.push(`updated_at=datetime('now')`);
     params.push(req.params.id);
-    db.prepare(`UPDATE notes SET ${fields.join(',')} WHERE id=?`).run(...params);
+    params.push(req.user_id);
+    const r = db.prepare(`UPDATE notes SET ${fields.join(',')} WHERE id=? AND user_id=?`).run(...params);
+    if (r.changes === 0) return res.status(404).json({ error: 'note not found or not yours' });
   }
   res.json({ ok: true });
 });
 
 app.delete('/api/notes/:id', requireAdmin, (req, res) => {
-  db.prepare('DELETE FROM notes WHERE id=?').run(req.params.id);
+  const r = db.prepare('DELETE FROM notes WHERE id=? AND user_id=?').run(req.params.id, req.user_id);
+  if (r.changes === 0) return res.status(404).json({ error: 'note not found or not yours' });
   res.json({ ok: true });
 });
 
@@ -582,8 +657,8 @@ const noteJobs = new Map(); // noteId -> { step, progress, message }
 
 app.post('/api/notes/:id/process', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
-  const note = db.prepare('SELECT * FROM notes WHERE id=?').get(id);
-  if (!note) return res.status(404).json({ error: 'not found' });
+  const note = db.prepare('SELECT * FROM notes WHERE id=? AND user_id=?').get(id, req.user_id);
+  if (!note) return res.status(404).json({ error: 'note not found or not yours' });
   // Allow processing even without raw_content: fall back to content
   // (useful for glimpse notes which only have a content field).
   if (!note.raw_content && !note.content && note.source_type !== 'lark') {
@@ -678,7 +753,7 @@ app.post('/api/notes/:id/process', requireAdmin, async (req, res) => {
         prompt = prompt.replace(new RegExp(`\\{\\{\\s*${k}\\s*\\}\\}`, 'g'), v);
       });
 
-      const result = await extractWithPrompt(prompt);
+      const result = await extractWithPrompt(prompt, req.user_id);
 
       // For "article" category skills, the LLM outputs TL;DR + dictionary;
       // we wrap the original raw content between them so the final note is:
@@ -716,15 +791,17 @@ app.post('/api/notes/:id/process', requireAdmin, async (req, res) => {
   })();
 });
 
-app.get('/api/notes/:id/job', (req, res) => {
+app.get('/api/notes/:id/job', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
   if (noteJobs.has(id)) return res.json(noteJobs.get(id));
-  const n = db.prepare('SELECT status FROM notes WHERE id=?').get(id);
-  if (n && n.status === 'done') return res.json({ step: 'done', progress: 100, message: '完成' });
+  const n = db.prepare('SELECT status FROM notes WHERE id=? AND user_id=?').get(id, req.user_id);
+  if (!n) return res.status(404).json({ error: 'note not found or not yours' });
+  if (n.status === 'done') return res.json({ step: 'done', progress: 100, message: '完成' });
   res.json({ step: 'idle', progress: 0 });
 });
 
 // Append a quote to today's 惊鸿一瞥 (glimpse) entry. Creates the entry if it doesn't exist.
+// Each user gets their own daily row keyed by (user_id, source_type='glimpse', title=today).
 app.post('/api/glimpse/append', requireAdmin, (req, res) => {
   const { text, source_type, source_id, source_title } = req.body || {};
   if (!text || !text.trim()) return res.status(400).json({ error: 'text required' });
@@ -733,14 +810,14 @@ app.post('/api/glimpse/append', requireAdmin, (req, res) => {
   const d = new Date();
   const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-  // Find or create today's glimpse note
-  let glimpse = db.prepare(`SELECT id, content FROM notes WHERE source_type='glimpse' AND title=?`).get(today);
+  // Find or create today's glimpse note for this user
+  let glimpse = db.prepare(`SELECT id, content FROM notes WHERE user_id=? AND source_type='glimpse' AND title=?`).get(req.user_id, today);
   let action = 'appended';
   if (!glimpse) {
     const info = db.prepare(`
-      INSERT INTO notes (source_type, title, content, status, metadata)
-      VALUES ('glimpse', ?, ?, 'done', '{}')
-    `).run(today, `# ${today}\n\n`);
+      INSERT INTO notes (user_id, source_type, title, content, status, metadata)
+      VALUES (?, 'glimpse', ?, ?, 'done', '{}')
+    `).run(req.user_id, today, `# ${today}\n\n`);
     glimpse = { id: info.lastInsertRowid, content: `# ${today}\n\n` };
     action = 'created';
   }
@@ -762,31 +839,32 @@ app.post('/api/glimpse/append', requireAdmin, (req, res) => {
 app.post('/api/notes/:id/abort', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
   noteJobs.delete(id);
-  db.prepare("UPDATE notes SET status='new' WHERE id=?").run(id);
+  const r = db.prepare("UPDATE notes SET status='new' WHERE id=? AND user_id=?").run(id, req.user_id);
+  if (r.changes === 0) return res.status(404).json({ error: 'note not found or not yours' });
   res.json({ ok: true });
 });
 
 // ========== Ask Murmur: knowledge base Q&A ==========
-app.post('/api/ask', async (req, res) => {
+app.post('/api/ask', requireAdmin, async (req, res) => {
   const { question } = req.body || {};
   if (!question || !question.trim()) {
     return res.status(400).json({ error: '问题不能为空' });
   }
 
   try {
-    // 1. Gather all done episodes with notes
+    // 1. Gather user's done episodes with notes
     const dones = db.prepare(`
       SELECT e.id, e.title, e.notes, p.name as podcast_name
       FROM episodes e JOIN podcasts p ON e.podcast_id=p.id
-      WHERE e.status='done' AND e.notes IS NOT NULL AND length(e.notes) > 200
-    `).all();
+      WHERE e.status='done' AND e.notes IS NOT NULL AND length(e.notes) > 200 AND e.user_id=?
+    `).all(req.user_id);
 
-    // 2. Gather all done notes (lark/manual) with content
+    // 2. Gather user's done notes (lark/manual) with content
     const doneNotes = db.prepare(`
       SELECT id, title, content, source_type
       FROM notes
-      WHERE status='done' AND content IS NOT NULL AND length(content) > 200
-    `).all();
+      WHERE status='done' AND content IS NOT NULL AND length(content) > 200 AND user_id=?
+    `).all(req.user_id);
 
     if (dones.length === 0 && doneNotes.length === 0) {
       return res.status(400).json({ error: '知识库为空，请先提炼一些笔记' });
@@ -844,7 +922,7 @@ ${question}
 （直接给回答，用 Markdown 格式，不要重复问题）`;
 
     // 5. Call DeepSeek
-    const answer = await extractWithPrompt(prompt);
+    const answer = await extractWithPrompt(prompt, req.user_id);
 
     // 6. Parse citations from answer
     const epIds = new Set();

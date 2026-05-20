@@ -9,6 +9,29 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const http = require('http');
+const Database = require('better-sqlite3');
+const { decryptApiKey } = require('./lib/crypto');
+
+// Per-user key resolution — pipeline.js may be required by server.js (which has its own DB
+// handle) or invoked standalone by scripts. Both point to the same file; SQLite handles concurrency.
+const _pipelineDbPath = path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname, 'podcasts.db');
+const _pipelineDb = new Database(_pipelineDbPath);
+
+/**
+ * Get a user's API keys (DeepSeek, Groq) from DB.
+ * Returns: { deepseek: string, groq: string }
+ * Throws with a user-friendly message if keys are missing.
+ */
+function getUserKeys(userId) {
+  if (!userId) throw new Error('userId required (multi-tenant)');
+  const u = _pipelineDb.prepare('SELECT deepseek_api_key, groq_api_key FROM users WHERE id = ?').get(userId);
+  if (!u) throw new Error(`user ${userId} not found`);
+  const ds = decryptApiKey(u.deepseek_api_key);
+  const gr = decryptApiKey(u.groq_api_key);
+  if (!ds) throw new Error('用户未配置 DeepSeek API key (去设置页填一下)');
+  if (!gr) throw new Error('用户未配置 Groq API key (去设置页填一下)');
+  return { deepseek: ds, groq: gr };
+}
 
 const AUDIO_DIR = path.join(__dirname, 'audio');
 const TRANSCRIPTS_DIR = path.join(__dirname, 'transcripts');
@@ -50,7 +73,7 @@ function downloadAudio(url, destPath, onProgress) {
 }
 
 // --- Step 2: Transcribe with Python script ---
-function transcribeAudio(audioPath, updateProgress, onProcess) {
+function transcribeAudio(audioPath, updateProgress, onProcess, groqApiKey) {
   return new Promise((resolve, reject) => {
     updateProgress({ step: 'transcribing', progress: 35, message: 'Groq Whisper 转录中...' });
 
@@ -60,7 +83,7 @@ function transcribeAudio(audioPath, updateProgress, onProcess) {
     const proc = spawn(pythonCmd, [scriptPath, audioPath, txtPath], {
       env: {
         ...process.env,
-        GROQ_API_KEY: process.env.GROQ_API_KEY || '',
+        GROQ_API_KEY: groqApiKey || process.env.GROQ_API_KEY || '',
       },
     });
     if (onProcess) onProcess(proc);
@@ -94,9 +117,11 @@ function transcribeAudio(audioPath, updateProgress, onProcess) {
   });
 }
 
-// --- Step 3: Extract notes with DeepSeek API ---
-function extractNotes(transcript, podcastName, episodeTitle) {
+// --- Step 3 (internal): Extract notes given a pre-resolved DeepSeek API key ---
+function _extractNotesWithKey(transcript, podcastName, episodeTitle, deepseek) {
   return new Promise((resolve, reject) => {
+    if (!deepseek) return reject(new Error('DEEPSEEK_API_KEY not set'));
+
     const maxLen = 500000;
     const truncated = transcript.length > maxLen
       ? transcript.substring(0, maxLen) + '\n\n[...truncated...]'
@@ -225,8 +250,7 @@ function extractNotes(transcript, podcastName, episodeTitle) {
 
 ${truncated}`;
 
-    const apiKey = process.env.DEEPSEEK_API_KEY || '';
-    if (!apiKey) return reject(new Error('DEEPSEEK_API_KEY not set'));
+    if (!deepseek) return reject(new Error('DEEPSEEK_API_KEY not set'));
 
     const body = JSON.stringify({
       model: 'deepseek-chat',
@@ -241,7 +265,7 @@ ${truncated}`;
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${deepseek}`,
         'Content-Length': Buffer.byteLength(body),
       },
       timeout: 600000,
@@ -267,8 +291,36 @@ ${truncated}`;
   });
 }
 
+// --- Step 3 (public): Extract notes — resolves user's API key from DB ---
+function extractNotes(transcript, podcastName, episodeTitle, userId) {
+  let deepseek;
+  if (userId) {
+    try {
+      const keys = getUserKeys(userId);
+      deepseek = keys.deepseek;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  } else {
+    console.warn('[pipeline] extractNotes called without userId — using env keys (legacy fallback)');
+    deepseek = process.env.DEEPSEEK_API_KEY;
+  }
+  return _extractNotesWithKey(transcript, podcastName, episodeTitle, deepseek);
+}
+
 // --- Full pipeline ---
-async function runPipeline(episode, audioUrl, updateProgress, onProcess) {
+async function runPipeline(episode, audioUrl, updateProgress, onProcess, userId) {
+  let deepseek, groq;
+  if (userId) {
+    const keys = getUserKeys(userId);
+    deepseek = keys.deepseek;
+    groq = keys.groq;
+  } else {
+    console.warn('[pipeline] runPipeline called without userId — using env keys (legacy fallback)');
+    deepseek = process.env.DEEPSEEK_API_KEY;
+    groq = process.env.GROQ_API_KEY;
+  }
+
   const audioPath = path.join(AUDIO_DIR, `ep_${episode.id}.mp3`);
 
   try {
@@ -282,13 +334,13 @@ async function runPipeline(episode, audioUrl, updateProgress, onProcess) {
       });
     }
 
-    // Step 2: Transcribe
-    const transcript = await transcribeAudio(audioPath, updateProgress, onProcess);
+    // Step 2: Transcribe (pass groq key directly)
+    const transcript = await transcribeAudio(audioPath, updateProgress, onProcess, groq);
     updateProgress({ step: 'transcribing', progress: 70, message: '转录完成' });
 
-    // Step 3: Extract notes
+    // Step 3: Extract notes (pass deepseek key directly via a resolved-key path to avoid double DB lookup)
     updateProgress({ step: 'extracting', progress: 75, message: 'DeepSeek 提炼三模块笔记...' });
-    const notes = await extractNotes(transcript, episode.podcast_name, episode.title);
+    const notes = await _extractNotesWithKey(transcript, episode.podcast_name, episode.title, deepseek);
     updateProgress({ step: 'saving', progress: 95, message: '保存笔记...' });
 
     try { fs.unlinkSync(audioPath); } catch(e) {}
@@ -299,9 +351,21 @@ async function runPipeline(episode, audioUrl, updateProgress, onProcess) {
 }
 
 // Generic skill-based extraction: takes a full prompt string and returns DeepSeek response
-function extractWithPrompt(prompt) {
+function extractWithPrompt(prompt, userId) {
+  let apiKey;
+  if (userId) {
+    try {
+      const keys = getUserKeys(userId);
+      apiKey = keys.deepseek;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  } else {
+    console.warn('[pipeline] extractWithPrompt called without userId — using env keys (legacy fallback)');
+    apiKey = process.env.DEEPSEEK_API_KEY || '';
+  }
+
   return new Promise((resolve, reject) => {
-    const apiKey = process.env.DEEPSEEK_API_KEY || '';
     if (!apiKey) return reject(new Error('DEEPSEEK_API_KEY not set'));
     const body = JSON.stringify({
       model: 'deepseek-chat',

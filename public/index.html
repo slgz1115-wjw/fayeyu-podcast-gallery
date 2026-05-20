@@ -164,8 +164,9 @@ body::before{
   border-radius:100px;padding:6px 8px 6px 22px;
   transition:all 0.25s ease;backdrop-filter:blur(8px);
 }
-.ask-box:focus-within{border-color:var(--o);box-shadow:0 8px 30px rgba(255,106,0,0.15),0 0 0 3px rgba(255,106,0,0.08);background:var(--w06);}
+.ask-box:focus-within{border-color:var(--o);box-shadow:0 8px 30px var(--op),0 0 0 3px var(--op);background:var(--w06);}
 .ask-box .ask-ic{color:var(--o);font-size:16px;flex-shrink:0;}
+
 .ask-box input{
   flex:1;background:transparent;border:none;outline:none;color:var(--ink);
   font-size:14px;font-family:inherit;padding:12px 4px;
@@ -176,20 +177,20 @@ body::before{
   background:var(--o);color:#fff;font-size:16px;flex-shrink:0;
   transition:all 0.2s;display:flex;align-items:center;justify-content:center;
 }
-.ask-btn:hover{background:#ff7a1a;transform:scale(1.05);}
+.ask-btn:hover{background:var(--ol);transform:scale(1.05);}
 .ask-btn:disabled{background:var(--ink3);cursor:not-allowed;transform:none;}
 
 /* Ask answer panel */
 .ask-panel{
   max-width:100%;margin:0 auto 40px;padding:28px 36px;
-  background:linear-gradient(180deg,rgba(255,106,0,0.04),var(--w02));
+  background:linear-gradient(180deg,var(--op),var(--w02));
   border:1px solid var(--line2);border-radius:16px;
   animation:askSlide 0.35s cubic-bezier(0.22,1,0.36,1);
 }
 @keyframes askSlide{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
 .ask-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line);}
 .ask-q-row{display:flex;gap:12px;align-items:flex-start;flex:1;}
-.ask-q-label{font-size:10px;font-weight:600;color:var(--o);background:rgba(255,106,0,0.12);padding:4px 10px;border-radius:4px;letter-spacing:1px;flex-shrink:0;margin-top:2px;}
+.ask-q-label{font-size:10px;font-weight:600;color:var(--o);background:var(--op);padding:4px 10px;border-radius:4px;letter-spacing:1px;flex-shrink:0;margin-top:2px;}
 .ask-q{font-size:16px;line-height:1.6;color:var(--ink);font-weight:500;}
 .ask-close{background:none;border:none;color:var(--ink3);font-size:16px;cursor:pointer;padding:6px 10px;border-radius:6px;transition:all 0.15s;flex-shrink:0;}
 .ask-close:hover{background:var(--w06);color:var(--ink);}
@@ -205,20 +206,20 @@ body::before{
 .ask-answer p{margin:10px 0;}
 .ask-answer ul,.ask-answer ol{padding-left:24px;margin:10px 0;}
 .ask-answer li{margin:4px 0;}
-.ask-answer blockquote{border-left:3px solid var(--o);padding:4px 14px;margin:12px 0;color:var(--ink2);background:rgba(255,106,0,0.04);}
+.ask-answer blockquote{border-left:3px solid var(--o);padding:4px 14px;margin:12px 0;color:var(--ink2);background:var(--op);}
 .ask-answer code{background:var(--w06);padding:1px 6px;border-radius:3px;font-size:12px;}
 .ask-answer strong{color:var(--ink);}
 .cit-chip{
   display:inline-flex;align-items:center;gap:3px;
-  background:rgba(255,106,0,0.14);color:var(--o);
+  background:var(--op);color:var(--o);
   padding:1px 7px;border-radius:4px;font-size:11px;font-weight:500;
   cursor:pointer;margin:0 2px;vertical-align:1px;
-  border:1px solid rgba(255,106,0,0.25);transition:all 0.15s;
+  border:1px solid var(--line2);transition:all 0.15s;
   text-decoration:none;
 }
-.cit-chip:hover{background:rgba(255,106,0,0.28);transform:translateY(-1px);}
-.cit-chip.cit-note{background:rgba(167,139,250,0.14);color:var(--p);border-color:rgba(167,139,250,0.25);}
-.cit-chip.cit-note:hover{background:rgba(167,139,250,0.28);}
+.cit-chip:hover{background:var(--w08);transform:translateY(-1px);}
+.cit-chip.cit-note{background:var(--pl);color:var(--p);border-color:var(--line2);}
+.cit-chip.cit-note:hover{background:var(--w08);}
 .ask-cits{margin-top:24px;padding-top:18px;border-top:1px solid var(--line);}
 .ask-cits:empty{display:none;}
 .ask-cits h4{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
@@ -245,16 +246,16 @@ body::before{
   background:var(--w06);
   border-color:var(--o);
   transform:translateY(-2px);
-  box-shadow:0 10px 30px rgba(255,106,0,0.12);
+  box-shadow:0 10px 30px var(--op);
 }
 .pill .pill-ic{font-size:15px;}
 .pill .pill-ct{
   margin-left:4px;font-size:10px;font-weight:700;
   background:var(--o);color:#fff;padding:2px 7px;border-radius:8px;min-width:18px;text-align:center;
 }
-.pill.pill-lark:hover{border-color:var(--p);box-shadow:0 10px 30px rgba(167,139,250,0.15);}
-.pill.pill-glimpse:hover{border-color:var(--yl);box-shadow:0 10px 30px rgba(251,191,36,0.18);}
-.pill.pill-thoughts:hover{border-color:var(--p);box-shadow:0 10px 30px rgba(167,139,250,0.18);}
+.pill.pill-lark:hover{border-color:var(--p);box-shadow:0 10px 30px var(--pl);}
+.pill.pill-glimpse:hover{border-color:var(--yl);box-shadow:0 10px 30px var(--pl);}
+.pill.pill-thoughts:hover{border-color:var(--p);box-shadow:0 10px 30px var(--pl);}
 .pill.pill-thoughts .pill-ic{color:var(--p);}
 
 /* Comments panel inside drawer */
@@ -269,13 +270,13 @@ body::before{
 .cmt-item .cmt-t:empty::before{content:'(无内容)';color:var(--ink4);}
 
 /* Glimpse timeline */
-.glimpse-nav{position:sticky;top:-26px;background:rgba(19,19,19,0.95);backdrop-filter:blur(8px);margin:-26px -32px 20px;padding:14px 32px;border-bottom:1px solid var(--line);z-index:5;overflow-x:auto;white-space:nowrap;}
+.glimpse-nav{position:sticky;top:-26px;background:var(--tab-bg);backdrop-filter:blur(8px);margin:-26px -32px 20px;padding:14px 32px;border-bottom:1px solid var(--line);z-index:5;overflow-x:auto;white-space:nowrap;}
 .glimpse-nav a{display:inline-block;font-size:11px;padding:6px 13px;margin-right:6px;border:1px solid var(--line2);border-radius:100px;color:var(--ink2);cursor:pointer;transition:all 0.15s;font-family:'JetBrains Mono',monospace;}
 .glimpse-nav a:hover{color:var(--yl);border-color:var(--yl);}
-.glimpse-month{font-family:'Cormorant Garamond',serif;font-size:28px;font-style:italic;color:var(--yl);margin:36px 0 18px;border-bottom:1px solid rgba(251,191,36,0.2);padding-bottom:10px;display:flex;align-items:baseline;gap:10px;}
+.glimpse-month{font-family:'Cormorant Garamond',serif;font-size:28px;font-style:italic;color:var(--yl);margin:36px 0 18px;border-bottom:1px solid var(--line2);padding-bottom:10px;display:flex;align-items:baseline;gap:10px;}
 .glimpse-month .count{font-size:11px;color:var(--ink3);font-family:'Inter',sans-serif;font-style:normal;letter-spacing:1px;text-transform:uppercase;}
-.glimpse-entry{margin-bottom:26px;padding:20px 22px;background:var(--w02);border:1px solid var(--line);border-left:3px solid rgba(251,191,36,0.4);border-radius:0 12px 12px 0;transition:border-left-color 0.2s;}
-.glimpse-entry.today{border-left-color:var(--yl);background:rgba(251,191,36,0.04);}
+.glimpse-entry{margin-bottom:26px;padding:20px 22px;background:var(--w02);border:1px solid var(--line);border-left:3px solid var(--line2);border-radius:0 12px 12px 0;transition:border-left-color 0.2s;}
+.glimpse-entry.today{border-left-color:var(--yl);background:var(--w03);}
 .glimpse-entry:hover{border-left-color:var(--yl);}
 .glimpse-hdr{display:flex;align-items:center;margin-bottom:14px;}
 .glimpse-date{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--yl);letter-spacing:0.5px;}
@@ -325,7 +326,7 @@ body::before{
 
 /* Buttons */
 .bt{padding:8px 16px;border:none;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer;transition:all 0.2s;font-weight:500;}
-.bp{background:var(--o);color:#fff;box-shadow:0 2px 12px rgba(255,106,0,0.25);}
+.bp{background:var(--o);color:#fff;box-shadow:0 2px 12px var(--op);}
 .bp:hover{background:var(--ol);transform:translateY(-1px);}
 .bou{background:transparent;border:1px solid var(--line2);color:var(--ink2);}
 .bou:hover{border-color:var(--o);color:var(--o);}
@@ -379,8 +380,8 @@ body::before{
 .star-btn.on{color:var(--yl);}
 .em{font-size:10px;color:var(--ink3);display:flex;gap:10px;align-items:center;flex-wrap:wrap;letter-spacing:0.3px;}
 .src-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:10px;font-weight:500;background:var(--w04);border:1px solid var(--line);}
-.src-chip.podcast{color:var(--o);border-color:rgba(255,106,0,0.25);}
-.src-chip.lark,.src-chip.transcript{color:var(--p);border-color:rgba(167,139,250,0.25);}
+.src-chip.podcast{color:var(--o);border-color:var(--line2);}
+.src-chip.lark,.src-chip.transcript{color:var(--p);border-color:var(--line2);}
 .ed{font-size:12.5px;color:var(--ink2);margin-top:10px;line-height:1.75;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .eac{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;align-items:center;}
 .st{display:inline-block;padding:3px 10px;border-radius:100px;font-size:10px;font-weight:500;letter-spacing:0.3px;}
@@ -398,10 +399,10 @@ body::before{
 /* Pending queue compact */
 .pending-block{margin-bottom:18px;padding:0;background:transparent;border:none;border-radius:10px;overflow:hidden;}
 .pending-block[open]{background:var(--w02);border:1px solid var(--line);padding:14px 18px;margin-bottom:24px;}
-.pending-summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:10px;padding:11px 20px 11px 22px;border-radius:100px;background:rgba(255,106,0,0.06);border:1px solid rgba(255,106,0,0.25);color:var(--ink);font-size:13px;font-weight:500;font-family:inherit;transition:all 0.2s;user-select:none;}
+.pending-summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:10px;padding:11px 20px 11px 22px;border-radius:100px;background:var(--op);border:1px solid var(--line2);color:var(--ink);font-size:13px;font-weight:500;font-family:inherit;transition:all 0.2s;user-select:none;}
 .pending-summary::-webkit-details-marker{display:none;}
 .pending-summary::marker{content:'';}
-.pending-summary:hover{background:rgba(255,106,0,0.12);border-color:var(--o);transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,106,0,0.12);}
+.pending-summary:hover{background:var(--w08);border-color:var(--o);transform:translateY(-1px);box-shadow:0 6px 18px var(--op);}
 .pending-block[open] .pending-summary{background:transparent;border:none;padding:0 0 4px 0;color:var(--ink3);font-weight:500;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;}
 .pending-block[open] .pending-summary:hover{color:var(--ink);transform:none;box-shadow:none;}
 .pending-icon{color:var(--o);font-size:13px;display:inline-flex;align-items:center;}
@@ -444,14 +445,14 @@ body::before{
 .dbody p{font-size:16px;line-height:1.85;margin-bottom:14px;color:var(--ink2);}
 .dbody ul,.dbody ol{padding-left:22px;margin-bottom:14px;}
 .dbody li{font-size:16px;line-height:1.85;margin-bottom:6px;color:var(--ink2);}
-.dbody blockquote{border-left:3px solid var(--o);padding:12px 18px;margin:14px 0;background:rgba(255,106,0,0.05);border-radius:0 8px 8px 0;font-size:15px;line-height:1.8;color:var(--ink2);font-style:italic;}
+.dbody blockquote{border-left:3px solid var(--o);padding:12px 18px;margin:14px 0;background:var(--op);border-radius:0 8px 8px 0;font-size:15px;line-height:1.8;color:var(--ink2);font-style:italic;}
 .dbody strong{color:var(--ink);font-weight:600;}
 .dbody hr{border:none;border-top:1px solid var(--line);margin:24px 0;}
 .dbody code{background:var(--w06);padding:1px 6px;border-radius:4px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--p);}
 .dbody a{color:var(--o);}
 .dbody table{width:100%;border-collapse:collapse;margin:16px 0;font-size:12.5px;background:var(--w02);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
 .dbody th,.dbody td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.65;}
-.dbody th{background:rgba(255,106,0,0.08);color:var(--o);font-weight:600;font-size:11px;letter-spacing:0.3px;text-transform:none;border-bottom:1px solid rgba(255,106,0,0.2);}
+.dbody th{background:var(--op);color:var(--o);font-weight:600;font-size:11px;letter-spacing:0.3px;text-transform:none;border-bottom:1px solid var(--line2);}
 .dbody td{color:var(--ink2);}
 .dbody tr:last-child td{border-bottom:none;}
 .dbody tr:hover td{background:var(--w02);}
@@ -464,7 +465,7 @@ body::before{
 .dh-tools .icon-btn:hover{color:var(--o);border-color:var(--o);}
 
 /* Contenteditable edit mode */
-.dbody[contenteditable="true"]{outline:none;border:1px dashed rgba(255,106,0,0.4);border-radius:10px;padding:24px 28px;background:rgba(255,106,0,0.02);}
+.dbody[contenteditable="true"]{outline:none;border:1px dashed var(--o);border-radius:10px;padding:24px 28px;background:var(--op);}
 .dbody[contenteditable="true"]:focus{border-color:var(--o);}
 
 /* Comment highlights */
@@ -490,7 +491,7 @@ body::before{
 .cmt-pop{position:fixed;z-index:350;background:var(--bg3);border:1px solid var(--line2);border-radius:12px;padding:14px 16px;max-width:340px;min-width:240px;box-shadow:0 20px 50px rgba(0,0,0,0.6);display:none;}
 .cmt-pop.visible{display:block;}
 .cmt-pop .cmt-kind-label{font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:8px;color:var(--o);text-transform:uppercase;}
-.cmt-pop.cmt-thought{border-color:rgba(167,139,250,0.4);box-shadow:0 20px 60px rgba(167,139,250,0.15),0 20px 50px rgba(0,0,0,0.6);}
+.cmt-pop.cmt-thought{border-color:var(--p);box-shadow:0 20px 60px var(--pl),0 20px 50px rgba(0,0,0,0.6);}
 .cmt-pop.cmt-thought .cmt-quote{border-left-color:var(--p);}
 .cmt-pop.cmt-thought textarea:focus{border-color:var(--p);}
 .cmt-pop .cmt-quote{font-size:10px;color:var(--ink3);font-style:italic;padding:6px 10px;border-left:2px solid var(--o);background:var(--w02);margin-bottom:10px;line-height:1.55;max-height:60px;overflow:hidden;}
@@ -500,12 +501,12 @@ body::before{
 
 /* 思考集 timeline */
 .th-group{margin-bottom:36px;}
-.th-group-header{display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:12px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);border-radius:10px;cursor:pointer;transition:all 0.15s;}
-.th-group-header:hover{background:rgba(167,139,250,0.12);border-color:var(--p);transform:translateX(4px);}
+.th-group-header{display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:12px;background:var(--pl);border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:all 0.15s;}
+.th-group-header:hover{background:var(--w08);border-color:var(--p);transform:translateX(4px);}
 .th-group-title{flex:1;font-size:14px;font-weight:600;color:var(--ink);}
 .th-group-label{font-size:10px;color:var(--ink3);padding:2px 8px;background:var(--w04);border-radius:4px;}
-.th-group-count{font-size:11px;color:var(--p);font-weight:700;background:rgba(167,139,250,0.18);padding:3px 10px;border-radius:20px;}
-.th-item{position:relative;padding:14px 18px;margin:8px 0 8px 20px;border-left:3px solid rgba(167,139,250,0.3);background:var(--w02);border-radius:0 8px 8px 0;}
+.th-group-count{font-size:11px;color:var(--p);font-weight:700;background:var(--pl);padding:3px 10px;border-radius:20px;}
+.th-item{position:relative;padding:14px 18px;margin:8px 0 8px 20px;border-left:3px solid var(--p);background:var(--w02);border-radius:0 8px 8px 0;}
 .th-item:hover{background:var(--w04);border-left-color:var(--p);}
 .th-quote{font-size:12px;color:var(--ink3);font-style:italic;line-height:1.65;padding-bottom:10px;border-bottom:1px dashed var(--line);margin-bottom:10px;}
 .th-body{font-size:13px;color:var(--ink);line-height:1.75;}
@@ -513,8 +514,8 @@ body::before{
 .th-del{background:none;border:none;color:var(--ink3);cursor:pointer;padding:2px 6px;border-radius:4px;font-size:10px;opacity:0.4;transition:all 0.15s;}
 .th-del:hover{opacity:1;color:#f87171;background:rgba(248,113,113,0.1);}
 
-.term-hl{background:linear-gradient(to bottom,transparent 62%,rgba(167,139,250,0.22) 62%);cursor:pointer;font-weight:500;border-bottom:1px dashed rgba(167,139,250,0.5);color:var(--ink);}
-.term-pop{position:fixed;z-index:300;background:var(--bg3);border:1px solid rgba(167,139,250,0.3);border-radius:12px;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,0.6);max-width:360px;min-width:260px;display:none;}
+.term-hl{background:linear-gradient(to bottom,transparent 62%,var(--pl) 62%);cursor:pointer;font-weight:500;border-bottom:1px dashed var(--p);color:var(--ink);}
+.term-pop{position:fixed;z-index:300;background:var(--bg3);border:1px solid var(--line2);border-radius:12px;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,0.6);max-width:360px;min-width:260px;display:none;}
 .term-pop.visible{display:block;}
 .term-pop .tp-name{font-size:14px;font-weight:700;color:var(--p);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
 .term-pop .tp-name .tp-tag{font-size:9px;background:var(--pl);color:var(--p);padding:1px 6px;border-radius:4px;font-weight:500;}
@@ -525,8 +526,8 @@ body::before{
 
 .backlinks{margin-top:32px;padding-top:22px;border-top:1px solid var(--line);}
 .backlinks h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--p);margin-bottom:12px;font-weight:600;font-family:'Inter',sans-serif;font-style:normal;}
-.bl-item{padding:10px 14px;background:rgba(167,139,250,0.05);border-radius:8px;margin-bottom:7px;border-left:2px solid var(--p);cursor:pointer;transition:all 0.15s;}
-.bl-item:hover{background:rgba(167,139,250,0.1);}
+.bl-item{padding:10px 14px;background:var(--pl);border-radius:8px;margin-bottom:7px;border-left:2px solid var(--p);cursor:pointer;transition:all 0.15s;}
+.bl-item:hover{background:var(--w08);}
 .bl-item .bl-term{font-size:12px;font-weight:600;color:var(--p);}
 .bl-item .bl-def{font-size:11px;color:var(--ink3);margin-top:2px;}
 
@@ -580,7 +581,7 @@ body::before{
 .kg-cat-header:hover{border-color:var(--line2);}
 .kg-sub-title{font-size:12px;font-weight:600;padding:6px 0 8px;display:flex;align-items:center;gap:7px;letter-spacing:0.3px;}
 .kn{background:var(--w02);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:8px;transition:all 0.2s;}
-.kn:hover{border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.04);}
+.kn:hover{border-color:var(--p);background:var(--pl);}
 .kg-collapsed{display:none!important;}
 
 /* Skills */
@@ -610,8 +611,13 @@ body::before{
   .tab{font-size:16px;padding:10px 14px;}
 }
 
-/* ===== 2026-05-08 (Faye): Botanical Specimen theme override for Murmur ===== */
-:root, .theme-dark, .theme-light{
+/* ===== 2026-05-08 (Faye): Botanical Specimen theme — light/auto default ===== */
+/* Apply warm sepia palette when NOT explicitly dark */
+:root:not([data-theme="dark"]), html:not([data-theme="dark"]) body{
+  --f-botanical:'Cormorant Garamond','Sorts Mill Goudy','Noto Serif SC',Georgia,serif;
+  --f-script:'Italianno',cursive;
+}
+html:not([data-theme="dark"]){
   --bg:#f5ecd9 !important; --bg2:#ebdfc3 !important; --bg3:#e3d2af !important;
   --ink:#2b2418 !important; --ink2:rgba(43,36,24,0.80) !important; --ink3:rgba(43,36,24,0.55) !important; --ink4:rgba(43,36,24,0.30) !important;
   --o:#a03515 !important; --ol:#c44a23 !important; --op:rgba(160,53,21,0.10) !important;
@@ -619,22 +625,83 @@ body::before{
   --gn:#4a5a3e !important; --rd:#a03515 !important; --yl:#8b6c1a !important;
   --line:rgba(191,176,148,0.55) !important; --line2:rgba(191,176,148,0.85) !important;
   --gold:#8b4a2a !important; --moss:#6e7a52 !important;
-  --f-botanical:'Cormorant Garamond','Sorts Mill Goudy','Noto Serif SC',Georgia,serif;
-  --f-script:'Italianno',cursive;
+  --tab-bg:rgba(245,236,217,0.92) !important;
+  --logo-grad:linear-gradient(180deg,#2b2418 0%,#5c3a1e 50%,#8b6c1a 100%) !important;
+  /* Surface tints — parchment-safe dark-on-light */
+  --w02:rgba(0,0,0,0.025) !important; --w03:rgba(0,0,0,0.04) !important;
+  --w04:rgba(0,0,0,0.055) !important; --w05:rgba(0,0,0,0.07) !important;
+  --w06:rgba(0,0,0,0.09) !important; --w08:rgba(0,0,0,0.12) !important;
+  --w12:rgba(0,0,0,0.16) !important; --w15:rgba(0,0,0,0.20) !important;
 }
-html, body{
+html:not([data-theme="dark"]) body{
   font-family:var(--f-botanical) !important;
   background:var(--bg) !important; color:var(--ink) !important;
 }
-body::before{
+html:not([data-theme="dark"]) body::before{
   content:'' !important; position:fixed !important; inset:0 !important; pointer-events:none !important; z-index:1 !important;
-  opacity:0.5; mix-blend-mode:multiply;
-  background-image:url("data:image/svg+xml;utf8,<svg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' seed='5'/><feColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.45 0 0 0 0 0.3 0 0 0 0.4 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>") !important;
+  opacity:0.35; mix-blend-mode:multiply;
+  background:url("data:image/svg+xml;utf8,<svg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' seed='5'/><feColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.45 0 0 0 0 0.3 0 0 0 0.4 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>") !important;
 }
-h1,h2,h3,h4,h5{font-family:var(--f-botanical) !important;font-style:italic;font-weight:300}
-.btn,.btn-primary{font-family:var(--f-botanical) !important;font-style:italic;letter-spacing:0.04em;border-radius:2px}
-/* 顶 brand 用花体 */
-.brand,.logo,.title{font-family:var(--f-botanical) !important;font-style:italic;color:var(--ink-warm)}
+html:not([data-theme="dark"]) h1,
+html:not([data-theme="dark"]) h2,
+html:not([data-theme="dark"]) h3,
+html:not([data-theme="dark"]) h4,
+html:not([data-theme="dark"]) h5{font-family:'Cormorant Garamond','Sorts Mill Goudy','Noto Serif SC',Georgia,serif !important;font-style:italic;font-weight:300}
+html:not([data-theme="dark"]) .btn,
+html:not([data-theme="dark"]) .btn-primary{font-family:'Cormorant Garamond','Sorts Mill Goudy','Noto Serif SC',Georgia,serif !important;font-style:italic;letter-spacing:0.04em;border-radius:2px}
+html:not([data-theme="dark"]) .brand,
+html:not([data-theme="dark"]) .logo,
+html:not([data-theme="dark"]) .title{font-family:'Cormorant Garamond','Sorts Mill Goudy','Noto Serif SC',Georgia,serif !important;font-style:italic}
+
+/* ===== Dark Botanical — deep charcoal with warm botanical accents ===== */
+html[data-theme="dark"]{
+  --bg:#1a1510 !important;      /* deep warm charcoal, like aged oak */
+  --bg2:#231d16 !important;     /* slightly lighter warm-dark */
+  --bg3:#2e2519 !important;     /* surface / card bg */
+  --ink:#f0e8d8 !important;     /* warm cream, readable on dark */
+  --ink2:rgba(240,232,216,0.78) !important;
+  --ink3:rgba(240,232,216,0.48) !important;
+  --ink4:rgba(240,232,216,0.26) !important;
+  --o:#d4622a !important;       /* terracotta, brighter for dark bg */
+  --ol:#e8763e !important;
+  --op:rgba(212,98,42,0.14) !important;
+  --p:#7a9e6e !important;       /* moss green, lighter for dark bg */
+  --pl:rgba(122,158,110,0.15) !important;
+  --gn:#7a9e6e !important;
+  --rd:#c8533a !important;
+  --yl:#c49b2a !important;      /* amber/gold, readable on dark */
+  --line:rgba(240,220,180,0.12) !important;
+  --line2:rgba(240,220,180,0.22) !important;
+  --gold:#c49b2a !important;
+  --moss:#7a9e6e !important;
+  --tab-bg:rgba(26,21,16,0.92) !important;
+  --logo-grad:linear-gradient(180deg,#f0e8d8 0%,#d4a870 40%,#8b5e2a 100%) !important;
+  /* Surface tints — white-transparent for dark bg */
+  --w02:rgba(255,255,255,0.02) !important; --w03:rgba(255,255,255,0.035) !important;
+  --w04:rgba(255,255,255,0.05) !important; --w05:rgba(255,255,255,0.065) !important;
+  --w06:rgba(255,255,255,0.08) !important; --w08:rgba(255,255,255,0.10) !important;
+  --w12:rgba(255,255,255,0.14) !important; --w15:rgba(255,255,255,0.18) !important;
+  --f-botanical:'Cormorant Garamond','Sorts Mill Goudy','Noto Serif SC',Georgia,serif;
+  --f-script:'Italianno',cursive;
+}
+html[data-theme="dark"] body{
+  font-family:var(--f-botanical) !important;
+  background:var(--bg) !important; color:var(--ink) !important;
+}
+html[data-theme="dark"] body::before{
+  content:'' !important; position:fixed !important; inset:0 !important; pointer-events:none !important; z-index:1 !important;
+  opacity:1; mix-blend-mode:normal;
+  background:radial-gradient(ellipse 900px 520px at 50% -10%,rgba(212,98,42,0.10),transparent 60%),
+             radial-gradient(ellipse 600px 400px at 85% 20%,rgba(122,158,110,0.07),transparent 55%) !important;
+}
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] h5{font-family:'Cormorant Garamond','Sorts Mill Goudy','Noto Serif SC',Georgia,serif !important;font-style:italic;font-weight:300}
+html[data-theme="dark"] .brand,
+html[data-theme="dark"] .logo,
+html[data-theme="dark"] .title{font-family:'Cormorant Garamond','Sorts Mill Goudy','Noto Serif SC',Georgia,serif !important;font-style:italic}
 /* End botanical override */
 
 /* 2026-05-09: Garden+ iframe 嵌入时,内容跟随 iframe 宽度 */
@@ -653,7 +720,35 @@ body > .page > * { max-width: 100% !important; }
 </style>
 </head>
 <body>
+<div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="max-width:380px;width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+    <h1 style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:32px;color:var(--o);margin:0 0 4px;">murmur</h1>
+    <p style="color:var(--ink3);font-size:13px;margin:0 0 20px;">low whispers, gathered quietly</p>
+
+    <div class="auth-tabs" style="display:flex;gap:0;margin-bottom:18px;border-bottom:1px solid var(--line);">
+      <button class="auth-tab" data-tab="login" style="flex:1;padding:10px;background:transparent;border:none;color:var(--ink);border-bottom:2px solid var(--o);font-weight:600;cursor:pointer;font-family:inherit;">登录</button>
+      <button class="auth-tab" data-tab="signup" style="flex:1;padding:10px;background:transparent;border:none;color:var(--ink3);border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;">注册</button>
+    </div>
+
+    <form id="auth-form" autocomplete="off" style="display:flex;flex-direction:column;gap:12px;">
+      <input id="auth-email" type="email" placeholder="email" required autocomplete="email" style="padding:10px 12px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--ink);font-size:14px;font-family:inherit;">
+      <input id="auth-password" type="password" placeholder="密码 (≥8 位)" required minlength="8" autocomplete="current-password" style="padding:10px 12px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--ink);font-size:14px;font-family:inherit;">
+      <button id="auth-submit" type="submit" style="padding:10px;background:var(--o);color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px;">登录</button>
+      <div id="auth-err" style="color:var(--rd);font-size:12px;min-height:14px;line-height:1.4;"></div>
+    </form>
+    <p style="color:var(--ink4);font-size:11px;margin-top:18px;line-height:1.6;">注册即可立即使用。提炼播客 / 笔记需要 DeepSeek + Groq API key，注册后在右上角「设置」里填。</p>
+  </div>
+</div>
 <div class="theme-slot" id="themeBtn" title="切换主题"></div>
+<div id="user-menu" style="position:fixed;top:10px;right:10px;z-index:9000;display:none;margin-left:8px;">
+  <button id="user-menu-btn" style="padding:6px 12px;background:var(--w04);border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:12px;cursor:pointer;font-family:inherit;">
+    <span id="user-menu-name">…</span> ▾
+  </button>
+  <div id="user-menu-dropdown" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:100;overflow:hidden;">
+    <button class="user-menu-item" data-action="settings" style="display:block;width:100%;text-align:left;padding:10px 14px;background:transparent;border:none;color:var(--ink);font-size:13px;cursor:pointer;font-family:inherit;">⚙ 设置</button>
+    <button class="user-menu-item" data-action="logout" style="display:block;width:100%;text-align:left;padding:10px 14px;background:transparent;border:none;color:var(--ink);font-size:13px;cursor:pointer;font-family:inherit;">↪ 登出</button>
+  </div>
+</div>
 
 <div class="page">
   <section class="hero">
@@ -2179,6 +2274,211 @@ function hm(id){document.getElementById(id).classList.remove('vis');}
 
 ld();setInterval(ld,300000);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cd();closeSrc();hidePop();document.querySelectorAll('.mb.vis').forEach(m=>m.classList.remove('vis'));}});
+</script>
+
+<div id="settings-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9998;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--bg2);border:1px solid var(--line);border-radius:12px;max-width:480px;width:100%;padding:28px;max-height:80vh;overflow-y:auto;">
+    <h2 style="margin:0 0 16px;color:var(--ink);font-size:18px;">设置</h2>
+
+    <h3 style="margin:16px 0 8px;color:var(--ink2);font-size:13px;">API Keys (用户自带)</h3>
+    <p style="font-size:11px;color:var(--ink3);margin:0 0 10px;line-height:1.5;">提炼笔记 / Ask Murmur 需要 DeepSeek (<a href="https://deepseek.com" target="_blank" rel="noopener" style="color:var(--o);">注册</a> 拿 sk-…) 和 Groq Whisper (<a href="https://console.groq.com" target="_blank" rel="noopener" style="color:var(--o);">注册</a> 拿 gsk_…) 的 key。</p>
+    <label style="display:block;font-size:11px;color:var(--ink3);margin-bottom:2px;">DeepSeek API key</label>
+    <input id="set-deepseek" type="password" placeholder="sk-..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line2);border-radius:5px;background:var(--bg);color:var(--ink);font-size:12px;margin-bottom:10px;font-family:inherit;">
+    <label style="display:block;font-size:11px;color:var(--ink3);margin-bottom:2px;">Groq API key</label>
+    <input id="set-groq" type="password" placeholder="gsk_..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line2);border-radius:5px;background:var(--bg);color:var(--ink);font-size:12px;margin-bottom:14px;font-family:inherit;">
+
+    <h3 style="margin:16px 0 8px;color:var(--ink2);font-size:13px;">改密码</h3>
+    <input id="set-curpass" type="password" placeholder="当前密码" autocomplete="current-password" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line2);border-radius:5px;background:var(--bg);color:var(--ink);font-size:12px;margin-bottom:6px;font-family:inherit;">
+    <input id="set-newpass" type="password" placeholder="新密码 (≥8 位)" autocomplete="new-password" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line2);border-radius:5px;background:var(--bg);color:var(--ink);font-size:12px;margin-bottom:14px;font-family:inherit;">
+
+    <h3 style="margin:16px 0 8px;color:var(--ink2);font-size:13px;">昵称</h3>
+    <input id="set-displayname" type="text" placeholder="显示名" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line2);border-radius:5px;background:var(--bg);color:var(--ink);font-size:12px;margin-bottom:14px;font-family:inherit;">
+
+    <div id="set-msg" style="font-size:12px;color:var(--gn);min-height:14px;margin-bottom:10px;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button id="set-cancel" style="padding:8px 16px;background:transparent;border:1px solid var(--line2);border-radius:5px;color:var(--ink);font-size:12px;cursor:pointer;font-family:inherit;">取消</button>
+      <button id="set-save" style="padding:8px 16px;background:var(--o);color:#fff;border:none;border-radius:5px;font-size:12px;cursor:pointer;font-family:inherit;">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const AUTH_TOKEN_KEY = 'murmur_token';
+  const origFetch = window.fetch.bind(window);
+
+  // Override fetch to inject Authorization header on /api/* calls
+  window.fetch = function(url, opts) {
+    opts = opts || {};
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (token && (typeof url === 'string') && url.startsWith('/api/')) {
+      opts.headers = Object.assign({}, opts.headers || {}, { 'Authorization': 'Bearer ' + token });
+    }
+    return origFetch(url, opts);
+  };
+
+  const gate = document.getElementById('auth-gate');
+  let mode = 'login';
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('.auth-tab').forEach(function(t) {
+      var active = t.dataset.tab === m;
+      t.style.color = active ? 'var(--ink)' : 'var(--ink3)';
+      t.style.borderBottomColor = active ? 'var(--o)' : 'transparent';
+      t.style.fontWeight = active ? '600' : '400';
+    });
+    document.getElementById('auth-submit').textContent = m === 'login' ? '登录' : '注册';
+    document.getElementById('auth-password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+  }
+
+  document.querySelectorAll('.auth-tab').forEach(function(t) {
+    t.addEventListener('click', function() { setMode(t.dataset.tab); });
+  });
+
+  document.getElementById('auth-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var email = document.getElementById('auth-email').value.trim();
+    var password = document.getElementById('auth-password').value;
+    var errEl = document.getElementById('auth-err');
+    errEl.textContent = '';
+    var submit = document.getElementById('auth-submit');
+    submit.disabled = true;
+    submit.textContent = mode === 'login' ? '登录中…' : '注册中…';
+    try {
+      var endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+      var r = await origFetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: password }),
+      });
+      var data = await r.json();
+      if (!r.ok) { errEl.textContent = data.error || (mode + ' 失败'); return; }
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      localStorage.setItem('murmur_user', JSON.stringify(data.user));
+      window.location.reload();
+    } catch (err) {
+      errEl.textContent = '网络错误: ' + err.message;
+    } finally {
+      submit.disabled = false;
+      submit.textContent = mode === 'login' ? '登录' : '注册';
+    }
+  });
+
+  function initUserMenu(u) {
+    document.getElementById('user-menu').style.display = 'inline-block';
+    document.getElementById('user-menu-name').textContent = u.display_name || u.email || 'user';
+
+    document.getElementById('user-menu-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      var dd = document.getElementById('user-menu-dropdown');
+      dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+    });
+    document.addEventListener('click', function() {
+      document.getElementById('user-menu-dropdown').style.display = 'none';
+    });
+
+    document.querySelectorAll('.user-menu-item').forEach(function(b) {
+      b.addEventListener('click', async function(ev) {
+        ev.stopPropagation();
+        var action = ev.currentTarget.dataset.action;
+        document.getElementById('user-menu-dropdown').style.display = 'none';
+        if (action === 'logout') {
+          try { await fetch('/api/auth/logout', { method: 'POST' }); } catch(_) {}
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          localStorage.removeItem('murmur_user');
+          window.location.reload();
+          return;
+        }
+        if (action === 'settings') {
+          document.getElementById('set-displayname').value = u.display_name || '';
+          document.getElementById('set-deepseek').value = '';
+          document.getElementById('set-groq').value = '';
+          document.getElementById('set-curpass').value = '';
+          document.getElementById('set-newpass').value = '';
+          var dsHint = u.has_deepseek ? '' : '⚠ 还没填 DeepSeek key — 提炼功能用不了';
+          document.getElementById('set-msg').textContent = dsHint;
+          document.getElementById('set-msg').style.color = 'var(--ink3)';
+          document.getElementById('settings-modal').style.display = 'flex';
+        }
+      });
+    });
+
+    document.getElementById('set-cancel').addEventListener('click', function() {
+      document.getElementById('settings-modal').style.display = 'none';
+    });
+
+    document.getElementById('set-save').addEventListener('click', async function() {
+      var payload = {};
+      var ds = document.getElementById('set-deepseek').value.trim();
+      var gr = document.getElementById('set-groq').value.trim();
+      var dn = document.getElementById('set-displayname').value.trim();
+      var cur = document.getElementById('set-curpass').value;
+      var newp = document.getElementById('set-newpass').value;
+      if (ds) payload.deepseek_api_key = ds;
+      if (gr) payload.groq_api_key = gr;
+      if (dn && dn !== (u.display_name || '')) payload.display_name = dn;
+      if (newp) { payload.current_password = cur; payload.new_password = newp; }
+      if (Object.keys(payload).length === 0) {
+        document.getElementById('set-msg').textContent = '没什么要改的';
+        document.getElementById('set-msg').style.color = 'var(--ink3)';
+        return;
+      }
+      var msgEl = document.getElementById('set-msg');
+      msgEl.textContent = '保存中…'; msgEl.style.color = 'var(--ink3)';
+      try {
+        var r = await fetch('/api/auth/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        var data = await r.json();
+        if (!r.ok) {
+          msgEl.textContent = '❌ ' + (data.error || '保存失败');
+          msgEl.style.color = 'var(--rd)';
+        } else {
+          msgEl.textContent = '✓ 已保存';
+          msgEl.style.color = 'var(--gn)';
+          try {
+            var r2 = await fetch('/api/auth/me');
+            var d2 = await r2.json();
+            if (d2.ok) {
+              localStorage.setItem('murmur_user', JSON.stringify(d2.user));
+              u = Object.assign(u, d2.user);
+              window.murmurUser = d2.user;
+              document.getElementById('user-menu-name').textContent = d2.user.display_name || d2.user.email || 'user';
+            }
+          } catch(_) {}
+          setTimeout(function() { document.getElementById('settings-modal').style.display = 'none'; }, 800);
+        }
+      } catch (e) {
+        msgEl.textContent = '❌ 网络错误: ' + e.message;
+        msgEl.style.color = 'var(--rd)';
+      }
+    });
+  }
+
+  // Boot: check if already logged in
+  (async function bootAuth() {
+    var token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) { gate.style.display = 'flex'; return; }
+    try {
+      var r = await origFetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!r.ok) {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        gate.style.display = 'flex';
+        return;
+      }
+      var data = await r.json();
+      localStorage.setItem('murmur_user', JSON.stringify(data.user));
+      window.murmurUser = data.user;
+      gate.style.display = 'none';
+      initUserMenu(data.user);
+    } catch (e) {
+      gate.style.display = 'flex';
+    }
+  })();
+})();
 </script>
 </body>
 </html>

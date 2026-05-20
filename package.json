@@ -3,17 +3,21 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "/Users/slgz1115/.deskclaw/node/bin/node --test tests/**/*.test.js tests/*.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "better-sqlite3": "^12.8.0",
+    "cookie-parser": "^1.4.7",
     "express": "^5.2.1",
+    "express-rate-limit": "^7.4.1",
     "marked": "^18.0.0",
     "node-cron": "^4.2.1",
+    "puppeteer": "^24.40.0",
     "rss-parser": "^3.13.0"
   }
 }

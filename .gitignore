@@ -4,3 +4,11 @@ audio/
 transcripts/
 ecosystem.config.js
 .DS_Store
+
+# 2026-05-19 SaaS conversion additions
+podcasts.db.bak-*
+podcasts.db-journal
+podcasts.db-shm
+podcasts.db-wal
+tests/fixtures/*.db
+.murmur-*
